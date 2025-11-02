@@ -118,7 +118,13 @@ h3 {
     padding: 0.75rem 1.5rem;
     font-weight: 600;
     border-radius: 999px;
+    border: none;
     transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(138, 99, 210, 0.2);
 }
 
 .btn-primary {
@@ -138,7 +144,7 @@ h3 {
 }
 
 .btn-secondary:hover {
-    background-color: #1e4fbd;
+    background-color: var(--color-secondary-dark);
     transform: translateY(-1px);
 }
 
@@ -182,11 +188,20 @@ h3 {
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+.form-group input::placeholder {
+    color: var(--color-text-light);
+    transition: color 0.2s ease;
+}
+
 .form-group input:focus,
 .form-group select:focus {
     outline: none;
-    border-color: rgba(37, 99, 235, 0.6);
-    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+    border-color: rgba(138, 99, 210, 0.6);
+    box-shadow: 0 0 0 4px rgba(138, 99, 210, 0.12);
+}
+
+.form-group input:focus::placeholder {
+    color: transparent;
 }
 
 .full-width {
@@ -194,7 +209,7 @@ h3 {
 }
 
 .auth-body {
-    background-image: radial-gradient(circle at top, rgba(37, 99, 235, 0.1), transparent 55%);
+    background-image: radial-gradient(circle at top, rgba(138, 99, 210, 0.12), transparent 55%);
     min-height: 100vh;
 }
 
