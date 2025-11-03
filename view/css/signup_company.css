@@ -1,0 +1,15 @@
+.page-signup-company .auth-intro p {
+    max-width: 32rem;
+    margin: 0 auto;
+}
+
+.page-signup-company .login-card {
+    gap: 1.5rem;
+}
+
+.page-signup-company .btn-secondary,
+.page-signup-company .btn-secondary:visited,
+.page-signup-company .btn-secondary:hover,
+.page-signup-company .btn-secondary:focus-visible {
+    color: #fff;
+}

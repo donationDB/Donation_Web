@@ -1,0 +1,399 @@
+:root {
+    --font-main: "Pretendard", "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --color-bg: #f7f7fb;
+    --color-surface: #ffffff;
+    --color-primary: #f05454;
+    --color-primary-dark: #d94343;
+    --color-secondary: #2563eb;
+    --color-text: #1f2933;
+    --color-text-light: #5f6c7b;
+    --color-border: #e2e8f0;
+    --shadow-sm: 0 10px 30px rgba(15, 23, 42, 0.08);
+    --shadow-md: 0 20px 50px rgba(15, 23, 42, 0.12);
+    --radius-sm: 12px;
+    --radius-lg: 24px;
+    --max-width: 1100px;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: var(--font-main);
+    color: var(--color-text);
+    background-color: var(--color-bg);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+img {
+    max-width: 100%;
+    display: block;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+p {
+    margin: 0 0 1rem;
+    color: var(--color-text-light);
+}
+
+h1,
+h2,
+h3 {
+    margin: 0;
+    color: var(--color-text);
+    font-weight: 700;
+}
+
+.container {
+    width: min(100% - 3rem, var(--max-width));
+    margin: 0 auto;
+}
+
+.site-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background-color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: saturate(180%) blur(18px);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+}
+
+.header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 0;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    font-weight: 700;
+    font-size: 1.2rem;
+    gap: 0.5rem;
+    color: var(--color-primary);
+}
+
+.logo-icon {
+    font-size: 1.5rem;
+}
+
+.nav ul {
+    display: flex;
+    gap: 1.5rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.nav a {
+    font-weight: 600;
+    color: var(--color-text-light);
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.nav a.is-active {
+    color: var(--color-primary);
+}
+
+.nav a:hover,
+.nav a:focus {
+    color: var(--color-primary);
+    transform: translateY(-1px);
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    border-radius: 999px;
+    border: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(138, 99, 210, 0.2);
+}
+
+.btn-primary {
+    color: #fff;
+    background-color: var(--color-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:hover {
+    background-color: var(--color-primary-dark);
+    transform: translateY(-1px);
+}
+
+.header-account {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.header-account .account-summary {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+}
+
+.header-account .account-label {
+    font-size: 0.85rem;
+    color: var(--color-text-light);
+}
+
+.header-account .account-name {
+    font-size: 1rem;
+    color: var(--color-text);
+}
+
+.header-account .account-email {
+    font-size: 0.85rem;
+    color: var(--color-text-light);
+}
+
+.header-account .account-logout {
+    padding: 0.5rem 1.25rem;
+    font-size: 0.85rem;
+}
+
+.btn-secondary {
+    color: #fff;
+    background-color: var(--color-secondary);
+}
+
+.btn-secondary:hover {
+    background-color: var(--color-secondary-dark);
+    transform: translateY(-1px);
+}
+
+.btn-link {
+    color: var(--color-secondary);
+    padding: 0.75rem 1rem;
+}
+
+.btn-large {
+    padding: 1rem 2.5rem;
+    font-size: 1.05rem;
+}
+
+.header-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    font-size: 0.95rem;
+    color: var(--color-text-light);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.form-group label {
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.form-group input,
+.form-group select {
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    background-color: #fff;
+    font-size: 1rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-group input::placeholder {
+    color: var(--color-text-light);
+    transition: color 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: rgba(138, 99, 210, 0.6);
+    box-shadow: 0 0 0 4px rgba(138, 99, 210, 0.12);
+}
+
+.form-group input:focus::placeholder {
+    color: transparent;
+}
+
+.full-width {
+    width: 100%;
+}
+
+.auth-body {
+    background-image: radial-gradient(circle at top, rgba(138, 99, 210, 0.12), transparent 55%);
+    min-height: 100vh;
+}
+
+.auth-main {
+    padding: 4rem 0 5rem;
+}
+
+.auth-intro {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.auth-intro h1 {
+    font-size: clamp(1.8rem, 3vw, 2.6rem);
+    margin-bottom: 0.75rem;
+}
+
+.auth-section {
+    position: relative;
+}
+
+.login-layout {
+    max-width: 520px;
+    margin: 0 auto;
+}
+
+.auth-card {
+    background-color: var(--color-surface);
+    border-radius: var(--radius-lg);
+    padding: 2.25rem;
+    box-shadow: var(--shadow-md);
+}
+
+.auth-card h2 {
+    font-size: 1.4rem;
+    margin-bottom: 0.5rem;
+}
+
+.login-card {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.card-subtitle {
+    margin-bottom: 1.5rem;
+    color: var(--color-text-light);
+    font-size: 0.95rem;
+}
+
+.signup-cta {
+    margin-top: 1.5rem;
+    text-align: center;
+}
+
+.signup-cta p {
+    margin-bottom: 0.75rem;
+    color: var(--color-text);
+    font-weight: 600;
+}
+
+.signup-actions {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.site-footer {
+    background-color: #101828;
+    color: #e2e8f0;
+    padding: 3.5rem 0 2rem;
+    margin-top: 4rem;
+}
+
+.footer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 2rem;
+}
+
+.footer-brand p {
+    color: rgba(226, 232, 240, 0.75);
+    margin-top: 0.5rem;
+}
+
+.footer-links h3,
+.footer-contact h3 {
+    color: #fff;
+    margin-bottom: 1rem;
+    font-size: 1.05rem;
+}
+
+.footer-links ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.footer-links a,
+.footer-contact a {
+    color: rgba(226, 232, 240, 0.85);
+    transition: color 0.2s ease;
+}
+
+.footer-links a:hover,
+.footer-contact a:hover {
+    color: #fff;
+}
+
+.socials {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.footer-bottom {
+    margin-top: 3rem;
+    text-align: center;
+    color: rgba(226, 232, 240, 0.75);
+}
+
+@media (max-width: 960px) {
+    .header-inner {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .auth-card {
+        padding: 2rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .container {
+        width: min(100% - 2rem, var(--max-width));
+    }
+
+    .nav ul {
+        flex-wrap: wrap;
+        gap: 1rem;
+        justify-content: center;
+    }
+
+    .auth-intro {
+        margin-bottom: 2rem;
+    }
+
+    .auth-card {
+        padding: 1.75rem;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+}

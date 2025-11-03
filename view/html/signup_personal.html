@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>희망나눔 – 개인 회원가입</title>
+    <link rel="stylesheet" href="../../core/components/components.css">
+    <link rel="stylesheet" href="../css/signup_personal.css">
+</head>
+<body class="auth-body page-signup-personal">
+    <header class="site-header">
+        <div class="container header-inner">
+        <a class="logo" href="homepage.html" aria-label="희망나눔 로고">
+            <span class="logo-icon" aria-hidden="true">❤</span>
+            <span class="logo-text">희망나눔</span>
+        </a>
+            <div class="header-copy">
+                <strong>희망나눔 신규 가입</strong>
+                <span>개인 회원으로 따뜻한 나눔을 시작해보세요.</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="auth-main">
+        <section class="auth-intro">
+            <div class="container">
+                <h1>개인 회원가입</h1>
+                <p>사용하는 이메일이 곧 아이디가 됩니다. 정확한 정보를 입력해주세요.</p>
+            </div>
+        </section>
+
+        <section class="auth-section">
+            <div class="container login-layout">
+                <article class="auth-card login-card" aria-labelledby="personal-signup-title">
+                    <h2 id="personal-signup-title">기본 정보 입력</h2>
+                    <form>
+                        <div class="form-group">
+                            <label for="personal-email">이메일 (아이디)</label>
+                            <input type="email" id="personal-email" name="personalEmail" placeholder="name@example.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="personal-password">비밀번호</label>
+                            <input type="password" id="personal-password" name="personalPassword" placeholder="비밀번호" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="personal-name">이름</label>
+                            <input type="text" id="personal-name" name="personalName" placeholder="홍길동" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="personal-phone">전화번호</label>
+                            <input type="tel" id="personal-phone" name="personalPhone" placeholder="010-1234-5678" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary full-width">개인 회원가입 완료</button>
+                    </form>
+
+                    <div class="signup-cta">
+                        <p>이미 계정이 있으신가요?</p>
+                        <a class="btn btn-secondary full-width" href="login_view.html">로그인으로 돌아가기</a>
+                    </div>
+                </article>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-bottom">
+            <small>&copy; 2024 희망나눔. 모든 권리 보유.</small>
+        </div>
+    </footer>
+
+    <script src="../javascript/homepage.js"></script>
+    <script src="../javascript/signup_personal.js"></script>
+</body>
+</html>

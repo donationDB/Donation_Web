@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>희망나눔 – 기업 회원가입</title>
+    <link rel="stylesheet" href="../../core/components/components.css">
+    <link rel="stylesheet" href="../css/signup_company.css">
+</head>
+<body class="auth-body page-signup-company">
+    <header class="site-header">
+        <div class="container header-inner">
+        <a class="logo" href="homepage.html" aria-label="희망나눔 로고">
+            <span class="logo-icon" aria-hidden="true">❤</span>
+            <span class="logo-text">희망나눔</span>
+        </a>
+            <div class="header-copy">
+                <strong>희망나눔 파트너 등록</strong>
+                <span>기업/단체 정보를 입력해 파트너로 함께하세요.</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="auth-main">
+        <section class="auth-intro">
+            <div class="container">
+                <h1>기업 회원가입</h1>
+                <p>기관 정보를 기반으로 관리자 계정을 생성합니다. 정확한 정보를 입력해주세요.</p>
+            </div>
+        </section>
+
+        <section class="auth-section">
+            <div class="container login-layout">
+                <article class="auth-card login-card" aria-labelledby="company-signup-title">
+                    <h2 id="company-signup-title">기관 정보 입력</h2>
+                    <form>
+                        <div class="form-group">
+                            <label for="company-id">로그인 아이디</label>
+                            <input type="text" id="company-id" name="companyId" placeholder="회사에서 사용할 아이디" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="company-password">비밀번호</label>
+                            <input type="password" id="company-password" name="companyPassword" placeholder="비밀번호" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="company-name">단체 이름</label>
+                            <input type="text" id="company-name" name="companyName" placeholder="희망나눔 복지재단" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="company-address">주소</label>
+                            <input type="text" id="company-address" name="companyAddress" placeholder="서울특별시 중구 사랑로 123" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="company-phone">단체 전화번호</label>
+                            <input type="tel" id="company-phone" name="companyPhone" placeholder="02-000-0000" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="company-registration">사업자 등록 번호</label>
+                            <input type="text" id="company-registration" name="companyRegistration" placeholder="123-45-67890" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary full-width">기업 회원가입 완료</button>
+                    </form>
+
+                    <div class="signup-cta">
+                        <p>이미 등록된 파트너인가요?</p>
+                        <a class="btn btn-secondary full-width" href="login_view.html">로그인으로 돌아가기</a>
+                    </div>
+                </article>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-bottom">
+            <small>&copy; 2024 희망나눔. 모든 권리 보유.</small>
+        </div>
+    </footer>
+
+    <script src="../javascript/homepage.js"></script>
+</body>
+</html>

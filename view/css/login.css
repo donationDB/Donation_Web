@@ -1,0 +1,111 @@
+.page-login .divider {
+    position: relative;
+    text-align: center;
+    margin: 1.5rem 0;
+    color: var(--color-text-light);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.page-login .divider::before,
+.page-login .divider::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 40%;
+    height: 1px;
+    background-color: var(--color-border);
+}
+
+.page-login .divider::before {
+    left: 0;
+}
+
+.page-login .divider::after {
+    right: 0;
+}
+
+.page-login .social-login {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.page-login .signup-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.page-login .signup-option {
+    flex: 1 1 0;
+    display: inline-flex;
+    justify-content: center;
+}
+
+.page-login .signup-option,
+.page-login .signup-option:visited,
+.page-login .signup-option:hover,
+.page-login .signup-option:focus-visible {
+    color: #fff;
+}
+
+@media (max-width: 520px) {
+    .page-login .signup-actions {
+        flex-direction: column;
+    }
+
+    .page-login .signup-option {
+        width: 100%;
+    }
+}
+
+.page-login .social-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 0.9rem 1rem;
+    border-radius: 999px;
+    border: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.page-login .social-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.page-login .social-btn .social-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.page-login .social-btn--kakao {
+    background-color: #fee500;
+    color: #3b1e1e;
+}
+
+.page-login .social-btn--kakao .social-icon {
+    background-color: #3b1e1e;
+    color: #fee500;
+}
+
+.page-login .social-btn--google {
+    background-color: #fff;
+    color: #1f2933;
+    border: 1px solid var(--color-border);
+}
+
+.page-login .social-btn--google .social-icon {
+    background: linear-gradient(135deg, #4285f4, #fbbc05, #34a853, #ea4335);
+    color: #fff;
+}
