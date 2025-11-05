@@ -34,7 +34,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const donor = await response.json();
       window.donorSession?.setSession?.(donor);
       alert(`${donor.name}님 환영합니다!`);
-      window.location.href = "homepage.html";
+
+      window.location.replace("homepage.html");
     } catch (error) {
       console.error(error);
       alert(error.message || "로그인 처리 중 오류가 발생했습니다.");
