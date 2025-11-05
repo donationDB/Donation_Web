@@ -31,10 +31,16 @@ document.addEventListener("DOMContentLoaded", () => {
         throw new Error(data.error || "로그인에 실패했습니다.");
       }
 
-      const donor = await response.json();
-      window.donorSession?.setSession?.(donor);
-      alert(`${donor.name}님 환영합니다!`);
+      const account = await response.json();
+      window.donorSession?.setSession?.(account);
 
+      if (account.role === "admin") {
+        alert("관리자님 환영합니다!");
+        window.location.replace("admin_dashboard.html");
+        return;
+      }
+
+      alert(`${account.name}님 환영합니다!`);
       window.location.replace("homepage.html");
     } catch (error) {
       console.error(error);
