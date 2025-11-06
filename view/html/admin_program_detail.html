@@ -1,87 +1,111 @@
 <!DOCTYPE html>
 <html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>프로그램 상세 정보</title>
-    <link rel="stylesheet" href="../../core/components/components.css">
-    <link rel="stylesheet" href="../css/admin_program_detail.css">
-</head>
-<body class="program-detail-body">
+    <link rel="stylesheet" href="../../core/components/components.css" />
+    <link rel="stylesheet" href="../css/admin_program_detail.css" />
+  </head>
+  <body class="program-detail-body">
     <header class="program-detail-header">
-        <nav class="program-detail-nav">
-            <a href="admin_dashboard.html" class="link-back">프로그램으로 돌아가기</a>
-            <a href="homepage.html" class="link-back">회사로 돌아가기</a>
-        </nav>
+      <nav class="program-detail-nav">
+        <a href="admin_dashboard.html" class="link-back"
+          >프로그램으로 돌아가기</a
+        >
+        <a href="homepage.html" class="link-back">회사로 돌아가기</a>
+      </nav>
     </header>
 
     <main class="program-detail-main">
-        <section class="program-detail-card" aria-live="polite">
-            <header class="program-detail-card__header">
-                <h1 data-field="title">프로그램 상세 정보</h1>
-                <p class="program-detail-meta" data-field="program-id">-</p>
-            </header>
+      <section class="program-detail-card" aria-live="polite">
+        <header class="program-detail-card__header">
+          <h1 data-field="title">프로그램 상세 정보</h1>
+          <p class="program-detail-meta" data-field="program-id">-</p>
+        </header>
 
-            <dl class="program-detail-list">
-                <div class="detail-row">
-                    <dt>시작 날짜</dt>
-                    <dd data-field="start-date">-</dd>
-                </div>
-                <div class="detail-row">
-                    <dt>종료 날짜</dt>
-                    <dd data-field="end-date">-</dd>
-                </div>
-                <div class="detail-row">
-                    <dt>장소</dt>
-                    <dd data-field="location">-</dd>
-                </div>
-                <div class="detail-row">
-                    <dt>상태</dt>
-                    <dd data-field="status">-</dd>
-                </div>
-                <div class="detail-row">
-                    <dt>목적</dt>
-                    <dd data-field="goal">-</dd>
-                </div>
-                <div class="detail-row">
-                    <dt>카테고리</dt>
-                    <dd data-field="category">-</dd>
-                </div>
-                <div class="detail-row">
-                    <dt>회사 이름</dt>
-                    <dd data-field="organization">-</dd>
-                </div>
-                <div class="detail-row">
-                    <dt>회사 번호</dt>
-                    <dd data-field="contact">-</dd>
-                </div>
-            </dl>
+        <dl class="program-detail-list">
+          <div class="detail-row">
+            <dt>시작 날짜</dt>
+            <dd data-field="start-date">-</dd>
+          </div>
+          <div class="detail-row">
+            <dt>종료 날짜</dt>
+            <dd data-field="end-date">-</dd>
+          </div>
+          <div class="detail-row">
+            <dt>장소</dt>
+            <dd data-field="location">-</dd>
+          </div>
+          <div class="detail-row">
+            <dt>상태</dt>
+            <dd data-field="status">-</dd>
+          </div>
+          <div class="detail-row">
+            <dt>목적</dt>
+            <dd data-field="goal">-</dd>
+          </div>
+          <div class="detail-row">
+            <dt>카테고리</dt>
+            <dd data-field="category">-</dd>
+          </div>
+          <div class="detail-row">
+            <dt>회사 이름</dt>
+            <dd data-field="organization">-</dd>
+          </div>
+          <div class="detail-row">
+            <dt>회사 번호</dt>
+            <dd data-field="contact">-</dd>
+          </div>
+        </dl>
 
-            <div class="program-detail-actions">
-                <button type="button" class="btn btn-primary" data-action="approve" disabled>승인</button>
-                <button type="button" class="btn btn-secondary" data-action="reject" disabled>반려</button>
-            </div>
+        <div class="program-detail-actions">
+          <button
+            type="button"
+            class="btn btn-primary"
+            data-action="approve"
+            disabled
+          >
+            승인
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-action="reject"
+            disabled
+          >
+            반려
+          </button>
+        </div>
 
-            <form class="donation-search" data-role="donation-search">
-                <label class="sr-only" for="donor-search-input">기부자 이름 검색</label>
-                <input type="search" id="donor-search-input" name="q" placeholder="기부자 이름 검색" disabled>
-                <select name="sort" disabled>
-                    <option value="date_desc">기부 날짜 내림차순</option>
-                    <option value="date_asc">기부 날짜 오름차순</option>
-                    <option value="amount_desc">기부 금액 높은 순</option>
-                    <option value="amount_asc">기부 금액 낮은 순</option>
-                </select>
-                <button type="button" disabled>검색 및 정렬</button>
-                <button type="button" disabled>검색 초기화</button>
-            </form>
+        <form class="donation-search" data-role="donation-search">
+          <label class="sr-only" for="donor-search-input"
+            >기부자 이름 검색</label
+          >
+          <input
+            type="search"
+            id="donor-search-input"
+            name="q"
+            placeholder="기부자 이름 검색"
+            disabled
+          />
+          <select name="sort" disabled>
+            <option value="date_desc">기부 날짜 내림차순</option>
+            <option value="date_asc">기부 날짜 오름차순</option>
+            <option value="amount_desc">기부 금액 높은 순</option>
+            <option value="amount_asc">기부 금액 낮은 순</option>
+          </select>
+          <button type="button" disabled>검색 및 정렬</button>
+          <button type="button" disabled>검색 초기화</button>
+        </form>
 
-            <section class="donation-empty">
-                <p>이 프로그램에 대한 기부 기록이 없습니다.</p>
-            </section>
+        <section class="donation-empty">
+          <p>이 프로그램에 대한 기부 기록이 없습니다.</p>
         </section>
+      </section>
     </main>
 
     <script src="../javascript/session.js"></script>
     <script src="../javascript/admin_program_detail.js"></script>
-</body>
+  </body>
 </html>

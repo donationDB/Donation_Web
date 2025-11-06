@@ -22,89 +22,91 @@ const pool = mysql.createPool({
 
 const SAMPLE_PROGRAMS = [
   {
-    program_id: "PRG-1001",
-    program_name: "따뜻한 겨울나기 캠페인",
-    category: "children",
-    status: "approved",
+    program_id: 1,
+    title: "따뜻한 겨울나기 캠페인",
+    category_id: 1,
+    status: "PLANNED",
     start_date: "2024-12-01",
     end_date: "2025-02-28",
-    total_amount: 12500000,
-    company_id: "C-1001",
-    location: "경산아동센터 위치",
-    goal_description: "겨울철 어린이 온기 지원",
-    organization: "경산아동센터",
-    contact: "010-1111-2222",
+    goal_amount: 12500000,
+    host_company_id: 1,
+    place: "경산아동센터 위치",
+    description: "겨울철 어린이 온기 지원",
   },
   {
-    program_id: "PRG-1002",
-    program_name: "초록 숲 가꾸기 프로젝트",
-    category: "environment",
-    status: "in_progress",
+    program_id: 2,
+    title: "초록 숲 가꾸기 프로젝트",
+    category_id: 2,
+    status: "RUNNING",
     start_date: "2024-10-01",
     end_date: "2025-03-31",
-    total_amount: 7800000,
-    company_id: "C-1002",
-    location: "수원 광교산 일대",
-    goal_description: "미세먼지 저감을 위한 도시 숲 조성",
-    organization: "푸른도시연구회",
-    contact: "02-345-6789",
+    goal_amount: 7800000,
+    host_company_id: 2,
+    place: "수원 광교산 일대",
+    description: "미세먼지 저감을 위한 도시 숲 조성",
   },
   {
-    program_id: "PRG-1003",
-    program_name: "농어촌 아동 교육 지원",
-    category: "education",
-    status: "pending",
+    program_id: 3,
+    title: "농어촌 아동 교육 지원",
+    category_id: 3,
+    status: "PLANNED",
     start_date: "2025-03-01",
     end_date: "2025-12-31",
-    total_amount: 0,
-    company_id: "C-1001",
-    location: "전남 완도군 아동센터",
-    goal_description: "디지털 격차 해소를 위한 기초 교육",
-    organization: "희망나눔재단",
-    contact: "031-200-1234",
+    goal_amount: 0,
+    host_company_id: 1,
+    place: "전남 완도군 아동센터",
+    description: "디지털 격차 해소를 위한 기초 교육",
   },
   {
-    program_id: "PRG-1004",
-    program_name: "반려동물 치료비 후원",
-    category: "animal",
-    status: "completed",
+    program_id: 4,
+    title: "반려동물 치료비 후원",
+    category_id: 4,
+    status: "FINISHED",
     start_date: "2023-05-01",
     end_date: "2023-10-31",
-    total_amount: 18200000,
-    company_id: "C-1003",
-    location: "서울 반려동물 지원센터",
-    goal_description: "치료가 시급한 반려동물 치료비 지원",
-    organization: "함께하는 PAWS",
-    contact: "010-5555-9876",
+    goal_amount: 18200000,
+    host_company_id: 3,
+    place: "서울 반려동물 지원센터",
+    description: "치료가 시급한 반려동물 치료비 지원",
   },
   {
-    program_id: "PRG-1005",
-    program_name: "희망 헌혈 릴레이",
-    category: "health",
-    status: "rejected",
+    program_id: 5,
+    title: "희망 헌혈 릴레이",
+    category_id: 5,
+    status: "PLANNED",
     start_date: "2024-08-15",
     end_date: "2024-11-30",
-    total_amount: 0,
-    company_id: "C-1004",
-    location: "부산 시민회관 앞 광장",
-    goal_description: "수혈이 필요한 환자 지원을 위한 헌혈 캠페인",
-    organization: "희망혈액원",
-    contact: "051-800-7777",
+    goal_amount: 0,
+    host_company_id: 4,
+    place: "부산 시민회관 앞 광장",
+    description: "수혈이 필요한 환자 지원을 위한 헌혈 캠페인",
   },
 ];
 
 const PROGRAM_STATUS = {
-  pending: { code: "pending", label: "승인 전" },
-  approved: { code: "approved", label: "승인 완료" },
-  rejected: { code: "rejected", label: "반려" },
-  in_progress: { code: "in_progress", label: "진행 중" },
-  completed: { code: "completed", label: "진행 완료" },
+  planned: { code: "planned", label: "계획", db: "PLANNED" },
+  running: { code: "running", label: "진행 중", db: "RUNNING" },
+  finished: { code: "finished", label: "종료", db: "FINISHED" },
 };
 
 const STATUS_LABEL_TO_CODE = Object.values(PROGRAM_STATUS).reduce((acc, item) => {
   acc[item.label] = item.code;
   return acc;
 }, {});
+
+const STATUS_DB_TO_CODE = {
+  PLANNED: "planned",
+  RUNNING: "running",
+  FINISHED: "finished",
+};
+
+const STATUS_ALIAS_TO_CODE = {
+  pending: "planned",
+  approved: "running",
+  completed: "finished",
+  in_progress: "running",
+  rejected: "planned",
+};
 
 const PROGRAM_CATEGORY = {
   children: { code: "children", label: "아동" },
@@ -120,18 +122,31 @@ const CATEGORY_LABEL_TO_CODE = Object.values(PROGRAM_CATEGORY).reduce((acc, item
   return acc;
 }, {});
 
+let sampleCategoryState = [];
+
 function normalizeStatus(raw) {
-  if (!raw) return PROGRAM_STATUS.pending;
+  if (!raw) return PROGRAM_STATUS.planned;
 
   const rawString = raw.toString().trim();
+  const upper = rawString.toUpperCase();
   const normalizedKey = rawString.toLowerCase().replace(/\s+/g, "_");
 
+  if (STATUS_DB_TO_CODE[upper] && PROGRAM_STATUS[STATUS_DB_TO_CODE[upper]]) {
+    return PROGRAM_STATUS[STATUS_DB_TO_CODE[upper]];
+  }
+
   if (PROGRAM_STATUS[normalizedKey]) return PROGRAM_STATUS[normalizedKey];
+
+  if (STATUS_ALIAS_TO_CODE[normalizedKey] && PROGRAM_STATUS[STATUS_ALIAS_TO_CODE[normalizedKey]]) {
+    return PROGRAM_STATUS[STATUS_ALIAS_TO_CODE[normalizedKey]];
+  }
 
   const byLabel = STATUS_LABEL_TO_CODE[rawString];
   if (byLabel && PROGRAM_STATUS[byLabel]) return PROGRAM_STATUS[byLabel];
 
-  return { code: normalizedKey || "pending", label: rawString || PROGRAM_STATUS.pending.label };
+  if (PROGRAM_STATUS[rawString]) return PROGRAM_STATUS[rawString];
+
+  return { code: normalizedKey || "planned", label: rawString || PROGRAM_STATUS.planned.label };
 }
 
 function normalizeCategory(raw) {
@@ -150,25 +165,34 @@ function normalizeCategory(raw) {
 
 function normalizeProgram(program = {}) {
   const statusInfo = normalizeStatus(program.status ?? program.status_name ?? program.status_label);
-  const categoryInfo = normalizeCategory(program.category ?? program.category_name ?? program.category_label);
+
+  const rawCategoryId = program.category_id ?? program.category ?? null;
+  let categoryName = program.category_name ?? program.category_label ?? program.category ?? "";
+  if (!categoryName && rawCategoryId !== null && rawCategoryId !== undefined) {
+    const matched = sampleCategoryState.find((category) => Number(category.category_id) === Number(rawCategoryId));
+    if (matched) categoryName = matched.category_name;
+  }
+
+  const hostCompanyId = program.host_company_id ?? program.company_id ?? program.provider_company_id ?? null;
 
   return {
     program_id: program.program_id ?? program.id ?? null,
-    program_name: program.program_name ?? program.name ?? "",
-    category: categoryInfo.code,
-    category_label: categoryInfo.label,
-    company_id: program.company_id ?? program.provider_company_id ?? program.companyId ?? null,
+    program_name: program.program_name ?? program.name ?? program.title ?? "",
+    title: program.title ?? program.program_name ?? "",
+    category_id: rawCategoryId !== undefined ? Number(rawCategoryId) : null,
+    category_name: categoryName,
     status: statusInfo.code,
     status_label: statusInfo.label,
     start_date: program.start_date ?? program.start_at ?? program.startDate ?? null,
     end_date: program.end_date ?? program.end_at ?? program.endDate ?? null,
-    total_amount: program.total_amount ?? program.totalAmount ?? 0,
-    goal_amount: program.goal_amount ?? program.goalAmount ?? null,
+    total_amount: program.total_amount ?? program.totalAmount ?? program.goal_amount ?? null,
+    goal_amount: program.goal_amount ?? program.goalAmount ?? program.total_amount ?? null,
     description: program.description ?? "",
-    goal_description: program.goal_description ?? program.goal_text ?? program.purpose ?? "",
+    goal_description: program.goal_description ?? program.goal_text ?? program.purpose ?? program.description ?? "",
     location: program.location ?? program.place ?? program.address ?? "",
     organization: program.organization ?? program.company_name ?? "",
     contact: program.contact ?? program.company_phone ?? program.phone ?? "",
+    host_company_id: hostCompanyId !== undefined ? Number(hostCompanyId) : null,
     created_at: program.created_at ?? null,
     updated_at: program.updated_at ?? null,
   };
@@ -182,16 +206,26 @@ function mapPrograms(programs) {
 }
 
 const SAMPLE_CATEGORIES = [
-  { category_id: "children", category_name: "아동" },
-  { category_id: "environment", category_name: "환경" },
-  { category_id: "education", category_name: "교육" },
-  { category_id: "animal", category_name: "동물" },
-  { category_id: "health", category_name: "보건" },
-  { category_id: "emergency", category_name: "긴급 구호" },
-  { category_id: "culture", category_name: "문화 예술" },
+  { category_id: 1, name: "아동", description: "아동 복지 및 교육 지원" },
+  { category_id: 2, name: "환경", description: "환경 보호 및 지속 가능성" },
+  { category_id: 3, name: "교육", description: "교육 기회 확대" },
+  { category_id: 4, name: "동물", description: "동물 보호 및 복지" },
+  { category_id: 5, name: "보건", description: "건강 증진 및 의료 지원" },
+  { category_id: 6, name: "긴급 구호", description: "재난 및 위기 대응" },
+  { category_id: 7, name: "문화 예술", description: "문화 예술 발전" },
 ];
 
-let sampleCategoryState = [...SAMPLE_CATEGORIES];
+function normalizeCategoryRow(row = {}) {
+  const rawId = row.category_id ?? row.id;
+  const category_id = Number.isFinite(Number(rawId)) ? Number(rawId) : rawId;
+  return {
+    category_id,
+    category_name: row.category_name ?? row.name ?? "",
+    description: row.description ?? "",
+  };
+}
+
+sampleCategoryState = SAMPLE_CATEGORIES.map((category) => normalizeCategoryRow(category));
 
 function filterCategories(categories, { keyword = "", searchField = "all" }) {
   if (!keyword) return categories;
@@ -200,10 +234,11 @@ function filterCategories(categories, { keyword = "", searchField = "all" }) {
   return categories.filter((category) => {
     const id = category.category_id?.toString().toLowerCase() ?? "";
     const name = category.category_name?.toString().toLowerCase() ?? "";
+    const description = category.description?.toString().toLowerCase() ?? "";
 
     if (searchField === "category_id") return id.includes(lower);
     if (searchField === "category_name") return name.includes(lower);
-    return id.includes(lower) || name.includes(lower);
+    return id.includes(lower) || name.includes(lower) || description.includes(lower);
   });
 }
 
@@ -228,37 +263,38 @@ function sortCategories(categories, sortField = "category_id") {
 
 const SAMPLE_COMPANIES_RAW = [
   {
-    company_id: "C-1001",
+    company_id: 1,
     company_name: "경산아동센터",
     contact: "010-1111-2222",
     address: "경산시 중산로 15",
-    program_ids: ["PRG-1001", "PRG-1003"],
+    program_ids: [1, 3],
   },
   {
-    company_id: "C-1002",
+    company_id: 2,
     company_name: "푸른도시연구회",
     contact: "02-345-6789",
     address: "서울시 서초구 서초대로 123",
-    program_ids: ["PRG-1002"],
+    program_ids: [2],
   },
   {
-    company_id: "C-1003",
+    company_id: 3,
     company_name: "함께하는 PAWS",
     contact: "010-5555-9876",
     address: "서울시 마포구 월드컵북로 45",
-    program_ids: ["PRG-1004"],
+    program_ids: [4],
   },
   {
-    company_id: "C-1004",
+    company_id: 4,
     company_name: "희망혈액원",
     contact: "051-800-7777",
     address: "부산시 해운대구 센텀중앙로 99",
-    program_ids: ["PRG-1005"],
+    program_ids: [5],
   },
 ];
 
 function normalizeCompany(company = {}, programLookup = new Map()) {
-  const companyId = company.company_id ?? company.id ?? null;
+  const rawId = company.company_id ?? company.id ?? null;
+  const companyId = rawId !== null && rawId !== undefined ? Number(rawId) : null;
   if (!companyId) return null;
 
   const programs =
@@ -276,7 +312,11 @@ function normalizeCompany(company = {}, programLookup = new Map()) {
     return acc;
   }, new Map());
 
-  const programList = Array.from(uniquePrograms.values());
+  const programList = sortPrograms(Array.from(uniquePrograms.values()), "deadline_asc").map((program) => ({
+    ...program,
+    organization: program.organization || company.company_name || company.name || "",
+    contact: program.contact || company.contact || company.phone || "",
+  }));
 
   return {
     company_id: companyId,
@@ -284,13 +324,13 @@ function normalizeCompany(company = {}, programLookup = new Map()) {
     contact: company.contact ?? company.phone ?? company.tel ?? "",
     address: company.address ?? company.location ?? "",
     program_count: programList.length,
-    programs: sortPrograms(programList, "deadline_asc"),
+    programs: programList,
   };
 }
 
 function buildSampleCompanies() {
   const programMap = sampleProgramState.reduce((acc, program) => {
-    const key = program.company_id ?? "UNASSIGNED";
+    const key = program.host_company_id ?? program.company_id ?? "UNASSIGNED";
     const list = acc.get(key) ?? [];
     list.push(program);
     acc.set(key, list);
@@ -492,8 +532,8 @@ async function runProgramMaintenance() {
       const [toInProgress] = await connection.execute(
         `
         UPDATE program
-        SET status = 'in_progress'
-        WHERE status = 'approved'
+        SET status = 'RUNNING'
+        WHERE status = 'PLANNED'
           AND start_date IS NOT NULL
           AND start_date <= CURDATE()
       `
@@ -502,8 +542,8 @@ async function runProgramMaintenance() {
       const [toCompleted] = await connection.execute(
         `
         UPDATE program
-        SET status = 'completed'
-        WHERE status = 'in_progress'
+        SET status = 'FINISHED'
+        WHERE status = 'RUNNING'
           AND end_date IS NOT NULL
           AND end_date < CURDATE()
       `
@@ -522,7 +562,7 @@ async function runProgramMaintenance() {
 
       if (updatedCount > 0) {
         console.log(
-          `[program-maintenance] in_progress:${toInProgress?.affectedRows ?? 0}, completed:${
+          `[program-maintenance] running:${toInProgress?.affectedRows ?? 0}, finished:${
             toCompleted?.affectedRows ?? 0
           }, deleted:${deleted?.affectedRows ?? 0}`
         );
@@ -564,12 +604,12 @@ app.get("/api/companies", async (req, res) => {
 
       if (ids.length) {
         const [programRows] = await pool.query(
-          "SELECT program_id, program_name, status, category, company_id, start_date, end_date, goal_amount, goal_description, location FROM program WHERE company_id IN (?)",
+          "SELECT program_id, title, status, category_id, host_company_id, start_date, end_date, goal_amount, description, place FROM program WHERE host_company_id IN (?)",
           [ids]
         );
         const normalizedPrograms = mapPrograms(programRows);
         programMap = normalizedPrograms.reduce((acc, program) => {
-          const key = program.company_id ?? "UNASSIGNED";
+          const key = program.host_company_id ?? program.company_id ?? "UNASSIGNED";
           const list = acc.get(key) ?? [];
           list.push(program);
           acc.set(key, list);
@@ -642,27 +682,26 @@ app.get("/api/categories", async (req, res) => {
     if (keyword) {
       const likeValue = `%${keyword}%`;
       if (searchField === "category_id") {
-        clauses.push("category_id LIKE ?");
+        clauses.push("CAST(category_id AS CHAR) LIKE ?");
         params.push(likeValue);
       } else if (searchField === "category_name") {
-        clauses.push("category_name LIKE ?");
+        clauses.push("name LIKE ?");
         params.push(likeValue);
       } else {
-        clauses.push("(category_id LIKE ? OR category_name LIKE ?)");
-        params.push(likeValue, likeValue);
+        clauses.push("(CAST(category_id AS CHAR) LIKE ? OR name LIKE ? OR description LIKE ?)");
+        params.push(likeValue, likeValue, likeValue);
       }
     }
 
-    const orderBy = sortField === "category_name" ? "category_name" : "category_id";
-    const sql = `SELECT category_id, category_name FROM category ${
+    const orderBy = sortField === "category_name" ? "name" : "category_id";
+    const sql = `SELECT category_id, name, description FROM category ${
       clauses.length ? `WHERE ${clauses.join(" AND ")}` : ""
     } ORDER BY ${orderBy} ASC`;
 
     const [rows] = await pool.query(sql, params);
-    const normalized = rows.map((row) => ({
-      category_id: row.category_id,
-      category_name: row.category_name,
-    }));
+    const normalized = rows.map((row) =>
+      normalizeCategoryRow({ category_id: row.category_id, name: row.name, description: row.description })
+    );
 
     if (normalized.length) {
       const filtered = filterCategories(normalized, { keyword, searchField });
@@ -678,22 +717,40 @@ app.get("/api/categories", async (req, res) => {
 });
 
 app.post("/api/categories", async (req, res) => {
-  const { category_id: rawId, category_name: rawName } = req.body ?? {};
+  const { category_id: rawId, category_name: rawName, description: rawDescription } = req.body ?? {};
   const category_id = rawId?.toString().trim();
   const category_name = rawName?.toString().trim();
+  const description = rawDescription?.toString().trim() ?? "";
 
-  if (!category_id || !category_name) {
-    return res.status(400).json({ error: "category_id, category_name 필수" });
+  if (!category_name) {
+    return res.status(400).json({ error: "category_name 필수" });
   }
 
   try {
-    await pool.execute("INSERT INTO category (category_id, category_name) VALUES (?, ?)", [
-      category_id,
-      category_name,
-    ]);
-    const category = { category_id, category_name };
+    if (category_id) {
+      await pool.execute("INSERT INTO category (category_id, name, description) VALUES (?, ?, ?)", [
+        Number(category_id),
+        category_name,
+        description,
+      ]);
+    } else {
+      const [result] = await pool.execute("INSERT INTO category (name, description) VALUES (?, ?)", [
+        category_name,
+        description,
+      ]);
+      const insertId = result?.insertId;
+      const category = normalizeCategoryRow({ category_id: insertId, name: category_name, description });
+      sampleCategoryState = sortCategories(
+        [...sampleCategoryState.filter((c) => c.category_id !== category.category_id), category],
+        "category_id"
+      );
+      res.status(201).json(category);
+      return;
+    }
+
+    const category = normalizeCategoryRow({ category_id, name: category_name, description });
     sampleCategoryState = sortCategories(
-      [...sampleCategoryState.filter((c) => c.category_id !== category_id), category],
+      [...sampleCategoryState.filter((c) => c.category_id !== category.category_id), category],
       "category_id"
     );
     res.status(201).json(category);
@@ -702,11 +759,14 @@ app.post("/api/categories", async (req, res) => {
     console.error("카테고리 추가 실패", error);
   }
 
-  if (sampleCategoryState.some((category) => category.category_id === category_id)) {
+  if (sampleCategoryState.some((category) => String(category.category_id) === String(category_id))) {
     return res.status(409).json({ error: "이미 존재하는 카테고리입니다." });
   }
 
-  const category = { category_id, category_name };
+  const nextId = category_id
+    ? Number(category_id)
+    : Math.max(0, ...sampleCategoryState.map((category) => Number(category.category_id) || 0)) + 1;
+  const category = normalizeCategoryRow({ category_id: nextId, name: category_name, description });
   sampleCategoryState = sortCategories([...sampleCategoryState, category], "category_id");
   res.status(201).json(category);
 });
@@ -716,9 +776,11 @@ app.delete("/api/categories/:categoryId", async (req, res) => {
   if (!categoryId) return res.status(400).json({ error: "categoryId 필수" });
 
   try {
-    const [result] = await pool.execute("DELETE FROM category WHERE category_id = ?", [categoryId]);
+    const [result] = await pool.execute("DELETE FROM category WHERE category_id = ?", [Number(categoryId)]);
     if (result?.affectedRows) {
-      sampleCategoryState = sampleCategoryState.filter((category) => category.category_id !== categoryId);
+      sampleCategoryState = sampleCategoryState.filter(
+        (category) => String(category.category_id) !== String(categoryId)
+      );
       res.status(204).end();
       return;
     }
@@ -726,7 +788,9 @@ app.delete("/api/categories/:categoryId", async (req, res) => {
     console.error("카테고리 삭제 실패", error);
   }
 
-  const index = sampleCategoryState.findIndex((category) => category.category_id === categoryId);
+  const index = sampleCategoryState.findIndex(
+    (category) => String(category.category_id) === String(categoryId)
+  );
   if (index === -1) return res.status(404).json({ error: "삭제할 카테고리를 찾지 못했습니다." });
 
   sampleCategoryState.splice(index, 1);
@@ -742,11 +806,16 @@ app.get("/api/programs", async (req, res) => {
   } = req.query ?? {};
 
   const keyword = typeof rawKeyword === "string" && rawKeyword.trim().length ? rawKeyword.trim() : null;
-  const category = typeof rawCategory === "string" && rawCategory.trim().length ? rawCategory.trim() : null;
+  const category =
+    rawCategory !== undefined && rawCategory !== null && rawCategory !== ""
+      ? String(rawCategory).trim()
+      : null;
 
-  const allowedStatuses = new Set(["all", "pending", "approved", "rejected", "in_progress", "completed"]);
+  const allowedStatuses = new Set(["all", "planned", "running", "finished"]);
   const status =
-    typeof rawStatus === "string" && allowedStatuses.has(rawStatus) && rawStatus !== "all" ? rawStatus : null;
+    typeof rawStatus === "string" && allowedStatuses.has(rawStatus) && rawStatus !== "all"
+      ? rawStatus.toLowerCase()
+      : null;
 
   const allowedSorts = new Set([
     "deadline_asc",
@@ -759,7 +828,12 @@ app.get("/api/programs", async (req, res) => {
   const sort = typeof rawSort === "string" && allowedSorts.has(rawSort) ? rawSort : "deadline_asc";
 
   try {
-    const [rows] = await pool.query("CALL search_programs(?, ?, ?, ?)", [keyword, category, status, sort]);
+    const [rows] = await pool.query("CALL search_programs(?, ?, ?, ?)", [
+      keyword,
+      category,
+      status ? status.toUpperCase() : null,
+      sort,
+    ]);
     const resultSet = Array.isArray(rows)
       ? Array.isArray(rows[0])
         ? rows[0]
@@ -772,10 +846,12 @@ app.get("/api/programs", async (req, res) => {
     }
 
     const fallback = sampleProgramState.filter((program) => {
-      const matchCategory = category ? String(program.category) === String(category) : true;
+      const matchCategory = category
+        ? String(program.category_id ?? program.category) === String(category)
+        : true;
       const matchStatus = status ? String(program.status) === String(status) : true;
       const matchKeyword = keyword
-        ? [program.program_id, program.program_name]
+        ? [program.program_id, program.program_name, program.title]
             .map((value) => String(value ?? "").toLowerCase())
             .some((value) => value.includes(keyword.toLowerCase()))
         : true;
@@ -816,15 +892,18 @@ app.patch("/api/programs/:programId/status", async (req, res) => {
   const { programId } = req.params ?? {};
   const { status: nextStatus } = req.body ?? {};
 
-  const allowedStatuses = new Set(["approved", "rejected"]);
+  const allowedStatuses = new Set(["planned", "running", "finished"]);
   if (!programId || !nextStatus || !allowedStatuses.has(nextStatus)) {
-    return res.status(400).json({ error: "programId, status(approved|rejected) 필수" });
+    return res.status(400).json({ error: "programId, status(planned|running|finished) 필수" });
   }
 
   try {
+    const statusInfo = PROGRAM_STATUS[nextStatus] ?? normalizeStatus(nextStatus);
+    const dbStatus = statusInfo.db ?? nextStatus.toUpperCase();
+
     const [result] = await pool.execute(
-      "UPDATE program SET status = ?, updated_at = NOW() WHERE program_id = ? AND status = 'pending'",
-      [nextStatus, programId]
+      "UPDATE program SET status = ?, updated_at = NOW() WHERE program_id = ?",
+      [dbStatus, Number(programId)]
     );
 
     if (result?.affectedRows) {
@@ -838,10 +917,6 @@ app.patch("/api/programs/:programId/status", async (req, res) => {
 
   const index = sampleProgramState.findIndex((program) => String(program.program_id) === String(programId));
   if (index === -1) return res.status(404).json({ error: "프로그램을 찾을 수 없습니다." });
-
-  if (sampleProgramState[index].status !== "pending") {
-    return res.status(409).json({ error: "승인 전 프로그램만 상태를 변경할 수 있습니다." });
-  }
 
   const statusInfo = PROGRAM_STATUS[nextStatus] ?? normalizeStatus(nextStatus);
 
@@ -877,8 +952,8 @@ app.delete("/api/programs/:programId", async (req, res) => {
   const index = sampleProgramState.findIndex((program) => String(program.program_id) === String(programId));
   if (index === -1) return res.status(404).json({ error: "삭제할 프로그램을 찾지 못했습니다." });
 
-  if (sampleProgramState[index].status !== "pending") {
-    return res.status(409).json({ error: "승인 전 상태의 프로그램만 삭제할 수 있습니다." });
+  if (sampleProgramState[index].status !== "planned") {
+    return res.status(409).json({ error: "계획 상태의 프로그램만 삭제할 수 있습니다." });
   }
 
   sampleProgramState.splice(index, 1);

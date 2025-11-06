@@ -9,8 +9,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const API_BASE = "http://localhost:8080";
 
   const addForm = document.querySelector("[data-role='category-add-form']");
-  const searchForm = document.querySelector("[data-role='category-search-form']");
-  const activeFilters = document.querySelector("[data-role='category-active-filters']");
+  const searchForm = document.querySelector(
+    "[data-role='category-search-form']"
+  );
+  const activeFilters = document.querySelector(
+    "[data-role='category-active-filters']"
+  );
   const tableBody = document.querySelector("[data-role='category-table-body']");
 
   const state = {
@@ -35,7 +39,8 @@ document.addEventListener("DOMContentLoaded", () => {
     activeFilters.innerHTML = "";
 
     if (!state.hasSearched) {
-      activeFilters.innerHTML = '<p class="active-filters__empty">카테고리 검색 조건을 설정해 주세요.</p>';
+      activeFilters.innerHTML =
+        '<p class="active-filters__empty">카테고리 검색 조건을 설정해 주세요.</p>';
       return;
     }
 
@@ -54,7 +59,8 @@ document.addEventListener("DOMContentLoaded", () => {
         : "전체";
     activeFilters.appendChild(createChip(`검색 기준: ${searchLabel}`));
 
-    const sortLabel = state.sortField === "category_name" ? "카테고리명" : "카테고리 ID";
+    const sortLabel =
+      state.sortField === "category_name" ? "카테고리명" : "카테고리 ID";
     activeFilters.appendChild(createChip(`정렬 기준: ${sortLabel}`));
   }
 
@@ -101,11 +107,14 @@ document.addEventListener("DOMContentLoaded", () => {
   async function fetchCategories() {
     const params = new URLSearchParams();
     if (state.keyword) params.set("keyword", state.keyword);
-    if (state.searchField && state.searchField !== "all") params.set("searchField", state.searchField);
+    if (state.searchField && state.searchField !== "all")
+      params.set("searchField", state.searchField);
     if (state.sortField) params.set("sortField", state.sortField);
 
     const query = params.toString();
-    const url = query ? `${API_BASE}/api/categories?${query}` : `${API_BASE}/api/categories`;
+    const url = query
+      ? `${API_BASE}/api/categories?${query}`
+      : `${API_BASE}/api/categories`;
 
     try {
       const response = await fetch(url);
@@ -126,7 +135,10 @@ document.addEventListener("DOMContentLoaded", () => {
     state.keyword = searchForm.keyword?.value?.trim() ?? "";
     state.searchField = searchForm.searchField?.value ?? "all";
     state.sortField = searchForm.sortField?.value ?? "category_id";
-    state.hasSearched = Boolean(state.keyword);
+    state.hasSearched =
+      Boolean(state.keyword) ||
+      state.searchField !== "all" ||
+      state.sortField !== "category_id";
     state.loading = true;
 
     renderTable({ loading: true });
@@ -139,7 +151,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderActiveFilters();
   }
 
-  function handleReset(event) {
+  async function handleReset(event) {
     event.preventDefault();
     searchForm.reset();
 
@@ -149,6 +161,7 @@ document.addEventListener("DOMContentLoaded", () => {
     state.hasSearched = false;
     state.loading = false;
 
+    await fetchCategories();
     renderTable({ rows: state.results });
     renderActiveFilters();
   }
@@ -156,19 +169,26 @@ document.addEventListener("DOMContentLoaded", () => {
   async function addCategory(event) {
     event.preventDefault();
 
-    const categoryId = addForm.categoryId?.value?.trim();
+    const rawCategoryId = addForm.categoryId?.value?.trim();
     const categoryName = addForm.categoryName?.value?.trim();
+    const categoryDescription = addForm.categoryDescription?.value?.trim();
 
-    if (!categoryId || !categoryName) {
-      alert("카테고리 ID와 카테고리명을 입력해주세요.");
+    if (!categoryName) {
+      alert("카테고리명을 입력해주세요.");
       return;
     }
 
     try {
+      const payload = {
+        category_name: categoryName,
+        description: categoryDescription || undefined,
+      };
+      if (rawCategoryId) payload.category_id = Number(rawCategoryId);
+
       const response = await fetch(`${API_BASE}/api/categories`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category_id: categoryId, category_name: categoryName }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -180,6 +200,7 @@ document.addEventListener("DOMContentLoaded", () => {
       renderTable({ rows: state.results });
       renderActiveFilters();
 
+      addForm.reset();
       alert("카테고리가 추가되었습니다.");
     } catch (error) {
       console.error(error);
@@ -197,9 +218,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!window.confirm(`${categoryId} 카테고리를 삭제하시겠습니까?`)) return;
 
     try {
-      const response = await fetch(`${API_BASE}/api/categories/${encodeURIComponent(categoryId)}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `${API_BASE}/api/categories/${encodeURIComponent(categoryId)}`,
+        {
+          method: "DELETE",
+        }
+      );
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
@@ -218,7 +242,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   addForm?.addEventListener("submit", addCategory);
-  addForm?.querySelector("[data-action='delete-category']")?.addEventListener("click", deleteCategory);
+  addForm
+    ?.querySelector("[data-action='delete-category']")
+    ?.addEventListener("click", deleteCategory);
 
   searchForm?.addEventListener("submit", handleSearch);
   searchForm?.addEventListener("reset", handleReset);

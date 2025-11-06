@@ -8,14 +8,26 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const donorForm = document.querySelector("[data-role='search-form']");
-  const donorActiveFilters = document.querySelector("[data-role='active-filters']");
-  const donorTableBody = document.querySelector("[data-role='donor-table-body']");
+  const donorActiveFilters = document.querySelector(
+    "[data-role='active-filters']"
+  );
+  const donorTableBody = document.querySelector(
+    "[data-role='donor-table-body']"
+  );
   const programForm = document.querySelector("[data-role='program-form']");
-  const programActiveFilters = document.querySelector("[data-role='program-active-filters']");
-  const programTableBody = document.querySelector("[data-role='program-table-body']");
+  const programActiveFilters = document.querySelector(
+    "[data-role='program-active-filters']"
+  );
+  const programTableBody = document.querySelector(
+    "[data-role='program-table-body']"
+  );
   const companyForm = document.querySelector("[data-role='company-form']");
-  const companyActiveFilters = document.querySelector("[data-role='company-active-filters']");
-  const companyTableBody = document.querySelector("[data-role='company-table-body']");
+  const companyActiveFilters = document.querySelector(
+    "[data-role='company-active-filters']"
+  );
+  const companyTableBody = document.querySelector(
+    "[data-role='company-table-body']"
+  );
   const logoutButton = document.querySelector("[data-action='logout']");
   const API_BASE = "http://localhost:8080";
 
@@ -55,41 +67,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const programCategoryLabels = {
     all: "전체",
-    children: "아동",
-    environment: "환경",
-    education: "교육",
-    animal: "동물",
-    health: "보건",
     others: "기타",
   };
 
-  const programCategoryFallback = {
-    아동: "children",
-    환경: "environment",
-    교육: "education",
-    동물: "animal",
-    보건: "health",
-    기타: "others",
-  };
-
   const programStatusLabels = {
-    pending: "승인 전",
-    approved: "승인 완료",
-    rejected: "반려",
-    in_progress: "진행 중",
-    completed: "진행 완료",
+    planned: "계획",
+    running: "진행 중",
+    finished: "종료",
   };
 
   const programStatusFallback = {
-    "승인 전": "pending",
-    승인전: "pending",
-    "승인 완료": "approved",
-    승인완료: "approved",
-    반려: "rejected",
-    "진행 중": "in_progress",
-    진행중: "in_progress",
-    "진행 완료": "completed",
-    진행완료: "completed",
+    PLANNED: "planned",
+    RUNNING: "running",
+    FINISHED: "finished",
+    pending: "planned",
+    approved: "running",
+    completed: "finished",
+    "승인 전": "planned",
+    승인전: "planned",
+    계획: "planned",
+    "계획 중": "planned",
+    "진행 중": "running",
+    진행중: "running",
+    진행: "running",
+    종료: "finished",
+    완료: "finished",
   };
 
   const programSortLabels = {
@@ -109,51 +111,29 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function resolveCategoryInfo(program = {}) {
-    const rawCode = (program.category ?? program.category_name ?? "").toString().toLowerCase();
-    const rawLabel = program.category_label ?? "";
-
-    if (rawLabel && rawCode) return { code: rawCode, label: rawLabel };
-
-    if (rawLabel && programCategoryFallback[rawLabel]) {
-      const code = programCategoryFallback[rawLabel];
-      return { code, label: rawLabel };
-    }
-
-    if (rawCode && programCategoryLabels[rawCode]) {
-      return { code: rawCode, label: programCategoryLabels[rawCode] };
-    }
-
-    if (rawCode && programCategoryFallback[rawCode]) {
-      const code = programCategoryFallback[rawCode];
-      return { code, label: programCategoryLabels[code] ?? rawLabel ?? rawCode };
-    }
-
-    return { code: rawCode || "others", label: rawLabel || rawCode || "-" };
+    const code = program.category_id ?? program.category ?? null;
+    const label =
+      program.category_name ??
+      program.category_label ??
+      program.category ??
+      "-";
+    return { code, label };
   }
 
   function resolveStatusInfo(program = {}) {
-    const rawCode = (program.status ?? program.status_name ?? "").toString().toLowerCase().replace(/\s+/g, "_");
-    const rawLabel = program.status_label ?? program.status_name ?? program.status ?? "";
-
-    if (rawLabel && rawCode && programStatusLabels[rawCode]) {
-      return { code: rawCode, label: rawLabel };
-    }
-
-    if (rawLabel && programStatusFallback[rawLabel]) {
-      const code = programStatusFallback[rawLabel];
-      return { code, label: programStatusLabels[code] ?? rawLabel };
-    }
-
-    if (rawCode && programStatusLabels[rawCode]) {
-      return { code: rawCode, label: programStatusLabels[rawCode] };
-    }
-
-    if (programStatusFallback[rawCode]) {
-      const code = programStatusFallback[rawCode];
-      return { code, label: programStatusLabels[code] ?? rawLabel ?? program.status ?? "-" };
-    }
-
-    return { code: rawCode || "pending", label: rawLabel || program.status || "-" };
+    const rawValue = program.status ?? program.status_name ?? "";
+    const rawString = rawValue.toString();
+    const normalized =
+      programStatusFallback[rawString] ??
+      programStatusFallback[rawString.toUpperCase()] ??
+      rawString.toLowerCase();
+    const code = programStatusLabels[normalized]
+      ? normalized
+      : programStatusFallback[normalized] ?? normalized;
+    const fallbackLabel =
+      program.status_label ?? programStatusLabels[code] ?? rawString;
+    const label = fallbackLabel ? fallbackLabel : "-";
+    return { code, label };
   }
 
   function renderDonorActiveFilters() {
@@ -162,7 +142,8 @@ document.addEventListener("DOMContentLoaded", () => {
     donorActiveFilters.innerHTML = "";
 
     if (!donorState.hasSearched) {
-      donorActiveFilters.innerHTML = '<p class="active-filters__empty">검색 조건을 설정해 주세요.</p>';
+      donorActiveFilters.innerHTML =
+        '<p class="active-filters__empty">검색 조건을 설정해 주세요.</p>';
       return;
     }
 
@@ -171,12 +152,22 @@ document.addEventListener("DOMContentLoaded", () => {
     label.textContent = "선택한 조건";
     donorActiveFilters.appendChild(label);
 
-    donorActiveFilters.appendChild(createChip(`검색어: ${donorState.searchTerm || "전체"}`));
     donorActiveFilters.appendChild(
-      createChip(`검색 기준: ${donorFieldLabels[donorState.searchField] || donorState.searchField}`),
+      createChip(`검색어: ${donorState.searchTerm || "전체"}`)
     );
     donorActiveFilters.appendChild(
-      createChip(`정렬 기준: ${donorFieldLabels[donorState.sortField] || donorState.sortField}`),
+      createChip(
+        `검색 기준: ${
+          donorFieldLabels[donorState.searchField] || donorState.searchField
+        }`
+      )
+    );
+    donorActiveFilters.appendChild(
+      createChip(
+        `정렬 기준: ${
+          donorFieldLabels[donorState.sortField] || donorState.sortField
+        }`
+      )
     );
   }
 
@@ -221,7 +212,8 @@ document.addEventListener("DOMContentLoaded", () => {
       row.appendChild(phoneCell);
 
       const categoryCell = document.createElement("td");
-      const categoryValue = donor.preferred_category ?? donor.category ?? "미등록";
+      const categoryValue =
+        donor.preferred_category ?? donor.category ?? "미등록";
       categoryCell.textContent = categoryValue || "미등록";
       row.appendChild(categoryCell);
 
@@ -250,7 +242,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (donorState.sortField) params.set("sortField", donorState.sortField);
 
     const query = params.toString();
-    const url = query ? `${API_BASE}/api/donors?${query}` : `${API_BASE}/api/donors`;
+    const url = query
+      ? `${API_BASE}/api/donors?${query}`
+      : `${API_BASE}/api/donors`;
 
     try {
       const response = await fetch(url);
@@ -329,7 +323,8 @@ document.addEventListener("DOMContentLoaded", () => {
     programActiveFilters.innerHTML = "";
 
     if (!programState.hasSearched) {
-      programActiveFilters.innerHTML = '<p class="active-filters__empty">프로그램 검색 조건을 설정해 주세요.</p>';
+      programActiveFilters.innerHTML =
+        '<p class="active-filters__empty">프로그램 검색 조건을 설정해 주세요.</p>';
       return;
     }
 
@@ -338,25 +333,34 @@ document.addEventListener("DOMContentLoaded", () => {
     label.textContent = "선택한 조건";
     programActiveFilters.appendChild(label);
 
-    programActiveFilters.appendChild(createChip(`검색어: ${programState.keyword || "전체"}`));
     programActiveFilters.appendChild(
-      createChip(`카테고리: ${programCategoryLabels[programState.category] || programState.category}`),
+      createChip(`검색어: ${programState.keyword || "전체"}`)
     );
+    const categoryLabel =
+      programState.category === "all"
+        ? "전체"
+        : programCategoryLabels[programState.category] ??
+          `카테고리 ${programState.category}`;
+    programActiveFilters.appendChild(createChip(`카테고리: ${categoryLabel}`));
+    const statusLabel =
+      programState.status === "all"
+        ? "모든 상태"
+        : programStatusLabels[programState.status] ?? programState.status;
+    programActiveFilters.appendChild(createChip(`상태: ${statusLabel}`));
     programActiveFilters.appendChild(
       createChip(
-        `상태: ${
-          programState.status === "all"
-            ? "모든 상태"
-            : programStatusLabels[programState.status] || programState.status
-        }`,
-      ),
-    );
-    programActiveFilters.appendChild(
-      createChip(`정렬 기준: ${programSortLabels[programState.sort] || programState.sort}`),
+        `정렬 기준: ${
+          programSortLabels[programState.sort] || programState.sort
+        }`
+      )
     );
   }
 
-  function renderProgramTable({ rows = [], emptyMessage = "", loading = false }) {
+  function renderProgramTable({
+    rows = [],
+    emptyMessage = "",
+    loading = false,
+  }) {
     if (!programTableBody) return;
 
     programTableBody.innerHTML = "";
@@ -388,7 +392,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const programName = program.program_name ?? program.name ?? "-";
       const statusInfo = resolveStatusInfo(program);
       const categoryInfo = resolveCategoryInfo(program);
-      const isPending = statusInfo.code === "pending";
+      const isPlanned = statusInfo.code === "planned";
 
       const idCell = document.createElement("td");
       idCell.textContent = programId;
@@ -404,22 +408,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const statusCell = document.createElement("td");
       const badge = document.createElement("span");
-      badge.className = `status-badge status-badge--${statusInfo.code ?? "pending"}`;
+      badge.className = `status-badge status-badge--${
+        statusInfo.code ?? "planned"
+      }`;
       badge.textContent = statusInfo.label ?? "-";
       statusCell.appendChild(badge);
       row.appendChild(statusCell);
 
       const startCell = document.createElement("td");
-      startCell.textContent = formatDate(program.start_date ?? program.start_at ?? program.startDate);
+      startCell.textContent = formatDate(
+        program.start_date ?? program.start_at ?? program.startDate
+      );
       row.appendChild(startCell);
 
       const endCell = document.createElement("td");
-      endCell.textContent = formatDate(program.end_date ?? program.end_at ?? program.endDate);
+      endCell.textContent = formatDate(
+        program.end_date ?? program.end_at ?? program.endDate
+      );
       row.appendChild(endCell);
 
       const amountCell = document.createElement("td");
       amountCell.dataset.type = "amount";
-      amountCell.textContent = formatCurrency(program.total_amount ?? program.totalAmount);
+      amountCell.textContent = formatCurrency(
+        program.total_amount ?? program.totalAmount
+      );
       row.appendChild(amountCell);
 
       const actionCell = document.createElement("td");
@@ -439,9 +451,9 @@ document.addEventListener("DOMContentLoaded", () => {
       deleteButton.dataset.action = "delete-program";
       deleteButton.dataset.programId = programId;
       deleteButton.dataset.programName = programName;
-      deleteButton.disabled = !isPending;
-      deleteButton.classList.toggle("is-disabled", !isPending);
-      deleteButton.setAttribute("aria-disabled", String(!isPending));
+      deleteButton.disabled = !isPlanned;
+      deleteButton.classList.toggle("is-disabled", !isPlanned);
+      deleteButton.setAttribute("aria-disabled", String(!isPlanned));
       deleteButton.textContent = "삭제";
       actionCell.appendChild(deleteButton);
 
@@ -455,12 +467,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const params = new URLSearchParams();
 
     if (programState.keyword) params.set("keyword", programState.keyword);
-    if (programState.category && programState.category !== "all") params.set("category", programState.category);
-    if (programState.status && programState.status !== "all") params.set("status", programState.status);
+    if (programState.category && programState.category !== "all")
+      params.set("category", programState.category);
+    if (programState.status && programState.status !== "all")
+      params.set("status", programState.status);
     if (programState.sort) params.set("sort", programState.sort);
 
     const query = params.toString();
-    const url = query ? `${API_BASE}/api/programs?${query}` : `${API_BASE}/api/programs`;
+    const url = query
+      ? `${API_BASE}/api/programs?${query}`
+      : `${API_BASE}/api/programs`;
 
     try {
       const response = await fetch(url);
@@ -471,7 +487,9 @@ document.addEventListener("DOMContentLoaded", () => {
       programState.results = Array.isArray(data) ? data : [];
     } catch (error) {
       console.error(error);
-      alert(error.message || "프로그램 정보를 불러오는 중 오류가 발생했습니다.");
+      alert(
+        error.message || "프로그램 정보를 불러오는 중 오류가 발생했습니다."
+      );
       programState.results = [];
     }
   }
@@ -533,7 +551,8 @@ document.addEventListener("DOMContentLoaded", () => {
     companyActiveFilters.innerHTML = "";
 
     if (!companyState.hasSearched || !companyState.keyword) {
-      companyActiveFilters.innerHTML = '<p class="active-filters__empty">회사 검색 조건을 설정해 주세요.</p>';
+      companyActiveFilters.innerHTML =
+        '<p class="active-filters__empty">회사 검색 조건을 설정해 주세요.</p>';
       return;
     }
 
@@ -542,10 +561,16 @@ document.addEventListener("DOMContentLoaded", () => {
     label.textContent = "선택한 조건";
     companyActiveFilters.appendChild(label);
 
-    companyActiveFilters.appendChild(createChip(`검색어: ${companyState.keyword}`));
+    companyActiveFilters.appendChild(
+      createChip(`검색어: ${companyState.keyword}`)
+    );
   }
 
-  function renderCompanyTable({ rows = [], emptyMessage = "", loading = false }) {
+  function renderCompanyTable({
+    rows = [],
+    emptyMessage = "",
+    loading = false,
+  }) {
     if (!companyTableBody) return;
 
     companyTableBody.innerHTML = "";
@@ -595,16 +620,27 @@ document.addEventListener("DOMContentLoaded", () => {
           item.className = "company-programs__item";
 
           const link = document.createElement("a");
-          link.href = `admin_program_detail.html?id=${encodeURIComponent(program.program_id)}`;
+          link.href = `admin_program_detail.html?id=${encodeURIComponent(
+            program.program_id
+          )}`;
           link.className = "company-programs__link";
           link.dataset.action = "open-program";
           link.dataset.programId = program.program_id;
-          link.textContent = program.program_name ?? program.program_id ?? "프로그램";
+          link.textContent =
+            program.program_name ?? program.program_id ?? "프로그램";
           item.appendChild(link);
 
+          const statusCode =
+            programStatusFallback[program.status] ??
+            program.status?.toLowerCase?.() ??
+            "planned";
           const badge = document.createElement("span");
-          badge.className = `status-badge status-badge--${program.status ?? "pending"}`;
-          badge.textContent = program.status_label ?? programStatusLabels[program.status] ?? program.status ?? "-";
+          badge.className = `status-badge status-badge--${statusCode}`;
+          badge.textContent =
+            program.status_label ??
+            programStatusLabels[statusCode] ??
+            program.status ??
+            "-";
           item.appendChild(badge);
 
           programList.appendChild(item);
@@ -636,7 +672,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (companyState.keyword) params.set("keyword", companyState.keyword);
 
     const query = params.toString();
-    const url = query ? `${API_BASE}/api/companies?${query}` : `${API_BASE}/api/companies`;
+    const url = query
+      ? `${API_BASE}/api/companies?${query}`
+      : `${API_BASE}/api/companies`;
 
     try {
       const response = await fetch(url);
@@ -668,15 +706,16 @@ document.addEventListener("DOMContentLoaded", () => {
     renderCompanyActiveFilters();
   }
 
-  function handleCompanyReset(event) {
+  async function handleCompanyReset(event) {
     event.preventDefault();
     companyForm.reset();
 
     companyState.keyword = "";
     companyState.hasSearched = false;
+    companyState.loading = true;
+    renderCompanyState({ loading: true });
+    await fetchCompanies();
     companyState.loading = false;
-    companyState.results = [];
-
     renderCompanyState();
     renderCompanyActiveFilters();
   }
@@ -685,9 +724,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!programId) return;
 
     try {
-      const response = await fetch(`${API_BASE}/api/programs/${encodeURIComponent(programId)}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `${API_BASE}/api/programs/${encodeURIComponent(programId)}`,
+        {
+          method: "DELETE",
+        }
+      );
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
@@ -746,7 +788,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!button) return;
 
     const donorName = button.dataset.donorName ?? "";
-    window.alert(`개인 후원 내역 조회는 추후 연결 예정입니다.\n(후원자: ${donorName})`);
+    window.alert(
+      `개인 후원 내역 조회는 추후 연결 예정입니다.\n(후원자: ${donorName})`
+    );
   });
 
   programTableBody?.addEventListener("click", async (event) => {
@@ -757,7 +801,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const programName = deleteButton.dataset.programName ?? programId;
       if (!programId) return;
 
-      const confirmed = window.confirm(`${programName} 프로그램을 삭제하시겠습니까?`);
+      const confirmed = window.confirm(
+        `${programName} 프로그램을 삭제하시겠습니까?`
+      );
       if (!confirmed) return;
 
       await deleteProgramById(programId, programName);
@@ -770,7 +816,9 @@ document.addEventListener("DOMContentLoaded", () => {
     event.preventDefault();
     const programId = detailButton.dataset.programId ?? "";
     if (!programId) return;
-    window.location.href = `admin_program_detail.html?id=${encodeURIComponent(programId)}`;
+    window.location.href = `admin_program_detail.html?id=${encodeURIComponent(
+      programId
+    )}`;
   });
 
   companyTableBody?.addEventListener("click", (event) => {
@@ -780,7 +828,9 @@ document.addEventListener("DOMContentLoaded", () => {
     event.preventDefault();
     const programId = link.dataset.programId ?? "";
     if (!programId) return;
-    window.location.href = `admin_program_detail.html?id=${encodeURIComponent(programId)}`;
+    window.location.href = `admin_program_detail.html?id=${encodeURIComponent(
+      programId
+    )}`;
   });
 
   renderDonorTable({
