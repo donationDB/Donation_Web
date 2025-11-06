@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>관리자 – 카테고리 관리</title>
+    <link rel="stylesheet" href="../../core/components/components.css" />
+    <link rel="stylesheet" href="../css/admin_category.css" />
+  </head>
+  <body class="category-body">
+    <header class="category-header">
+      <div class="category-header__inner">
+        <div>
+          <strong class="category-header__title">관리자 모드</strong>
+          <span class="category-header__subtitle"
+            >후원 프로그램 카테고리 관리</span
+          >
+        </div>
+        <nav class="category-header__nav">
+          <a class="btn btn-secondary" href="admin_dashboard.html">대시보드</a>
+          <a class="btn btn-outline" href="homepage.html">홈 화면</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="category-main">
+      <section class="category-panel">
+        <h1>카테고리 추가</h1>
+        <form class="category-form" data-role="category-add-form">
+          <div class="form-row">
+            <label for="category-id">카테고리 ID</label>
+            <input
+              type="number"
+              id="category-id"
+              name="categoryId"
+              placeholder="미입력 시 자동 생성"
+            />
+          </div>
+          <div class="form-row">
+            <label for="category-name">카테고리명</label>
+            <input
+              type="text"
+              id="category-name"
+              name="categoryName"
+              placeholder="예: 아동"
+              required
+            />
+          </div>
+          <div class="form-row">
+            <label for="category-description">설명</label>
+            <input
+              type="text"
+              id="category-description"
+              name="categoryDescription"
+              placeholder="예: 아동 복지 및 교육 지원"
+            />
+          </div>
+          <div class="action-row">
+            <button
+              type="submit"
+              class="btn btn-primary"
+              data-action="add-category"
+            >
+              카테고리 추가
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-action="delete-category"
+            >
+              카테고리 삭제
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section class="category-panel">
+        <h2>카테고리 검색</h2>
+        <form class="filter-form" data-role="category-search-form">
+          <div class="filter-grid">
+            <div class="form-group">
+              <label for="category-search-term">검색어</label>
+              <input
+                type="search"
+                id="category-search-term"
+                name="keyword"
+                placeholder="카테고리 ID 또는 이름 검색"
+              />
+            </div>
+            <div class="form-group">
+              <label for="category-search-field">검색 기준</label>
+              <select id="category-search-field" name="searchField">
+                <option value="all">전체</option>
+                <option value="category_id">카테고리 ID</option>
+                <option value="category_name">카테고리명</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="category-sort-field">정렬 기준</label>
+              <select id="category-sort-field" name="sortField">
+                <option value="category_id">카테고리 ID</option>
+                <option value="category_name">카테고리명</option>
+              </select>
+            </div>
+          </div>
+          <div class="filter-actions">
+            <button type="submit" class="btn btn-primary">검색</button>
+            <button
+              type="reset"
+              class="btn btn-secondary"
+              data-action="reset-category"
+            >
+              초기화
+            </button>
+          </div>
+        </form>
+
+        <section
+          class="active-filters"
+          data-role="category-active-filters"
+          aria-live="polite"
+        >
+          <p class="active-filters__empty">
+            카테고리 검색 조건을 설정해 주세요.
+          </p>
+        </section>
+
+        <div class="table-wrapper">
+          <table class="category-table">
+            <thead>
+              <tr>
+                <th scope="col">카테고리 ID</th>
+                <th scope="col">카테고리명</th>
+              </tr>
+            </thead>
+            <tbody data-role="category-table-body">
+              <tr>
+                <td colspan="2">검색하면 카테고리가 여기에 표시됩니다.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="../javascript/session.js"></script>
+    <script src="../javascript/admin_category.js"></script>
+  </body>
+</html>

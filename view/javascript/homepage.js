@@ -58,4 +58,16 @@ document.addEventListener("DOMContentLoaded", () => {
     document.addEventListener("donor:login", renderAccount);
     document.addEventListener("donor:logout", renderAccount);
   }
+
+  const donateCtaButton = document.querySelector(".cta .btn-primary");
+
+  if (donateCtaButton) {
+    donateCtaButton.addEventListener("click", (event) => {
+      const session = window.donorSession?.getSession?.();
+      if (!session) {
+        event.preventDefault();
+        window.location.href = "login_view.html";
+      }
+    });
+  }
 });
