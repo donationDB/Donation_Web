@@ -233,14 +233,22 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
+      const isAdmin = session.role === "admin";
+      const dashboardButton = isAdmin
+        ? `<a class="btn account-dashboard" href="admin_dashboard.html">관리자 대시보드</a>`
+        : "";
+
       accountSlot.innerHTML = `
-        <div class="account-summary account-summary--auth">
+        <div class="account-summary account-summary--auth${isAdmin ? " account-summary--admin" : ""}">
           <div class="account-summary__info">
             <span class="account-label">내 정보</span>
             <strong class="account-name">${session.name}님</strong>
             <span class="account-email">${session.email}</span>
           </div>
-          <button type="button" class="btn btn-secondary account-logout" data-action="logout">로그아웃</button>
+          <div class="account-summary__actions">
+            ${dashboardButton}
+            <button type="button" class="btn btn-secondary account-logout" data-action="logout">로그아웃</button>
+          </div>
         </div>
       `;
 

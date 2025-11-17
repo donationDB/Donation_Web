@@ -4,7 +4,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const stored = window.donorSession?.getSession?.();
   if (stored) {
-    window.location.replace("homepage.html");
+    const redirect = stored.role === "admin" ? "admin_dashboard.html" : "homepage.html";
+    window.location.replace(redirect);
     return;
   }
 

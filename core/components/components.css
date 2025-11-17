@@ -158,6 +158,12 @@ h3 {
     gap: 0.15rem;
 }
 
+.header-account .account-summary__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 .header-account .account-label {
     font-size: 0.85rem;
     color: var(--color-text-light);
@@ -171,6 +177,21 @@ h3 {
 .header-account .account-email {
     font-size: 0.85rem;
     color: var(--color-text-light);
+}
+
+.header-account .account-dashboard {
+    border: 1px solid rgba(37, 99, 235, 0.4);
+    background-color: transparent;
+    color: var(--color-secondary);
+    padding: 0.5rem 1.25rem;
+    font-size: 0.85rem;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.header-account .account-dashboard:hover,
+.header-account .account-dashboard:focus-visible {
+    border-color: var(--color-secondary);
+    background-color: rgba(37, 99, 235, 0.1);
 }
 
 .header-account .account-logout {
