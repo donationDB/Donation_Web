@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>희망나눔 – 분야별 프로그램</title>
+    <link rel="stylesheet" href="../../core/components/components.css" />
+    <link rel="stylesheet" href="../css/category_programs.css" />
+  </head>
+  <body class="page-category-programs">
+    <header class="category-header">
+      <div class="container category-header__inner">
+        <a class="logo" href="homepage.html" aria-label="희망나눔 로고">
+          <span class="logo-icon" aria-hidden="true">❤</span>
+          <span class="logo-text">희망나눔</span>
+        </a>
+        <div class="category-header__context">
+          <p class="category-header__breadcrumb">
+            <a href="homepage.html">홈</a>
+            <span aria-hidden="true">›</span>
+            <span data-field="category-name">기부 분야</span>
+          </p>
+          <h1 data-field="category-title">기부 분야 프로그램</h1>
+          <p data-field="category-description" class="category-header__description">
+            관심 있는 분야의 진행 중인 프로그램을 살펴보세요.
+          </p>
+        </div>
+        <div class="category-header__actions">
+          <a class="btn btn-secondary" href="homepage.html">다른 분야 보기</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="category-main">
+      <section class="category-programs" aria-live="polite">
+        <div class="container">
+          <div class="program-toolbar">
+            <p data-role="program-count">진행 중 프로그램 0건</p>
+            <button type="button" class="btn btn-tertiary" data-action="refresh">새로고침</button>
+          </div>
+
+          <div class="program-card-grid program-card-grid--skeleton" data-role="skeletons" hidden></div>
+          <div class="program-card-grid" data-role="program-list"></div>
+          <p class="program-empty" data-role="program-empty" hidden>
+            현재 진행 중인 프로그램이 없습니다. 다른 분야를 확인해 주세요.
+          </p>
+          <button type="button" class="btn btn-secondary program-load-more" data-action="load-more" hidden>
+            더 보기
+          </button>
+          <div class="program-load-sentinel" data-role="sentinel" aria-hidden="true"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="category-footer">
+      <div class="container footer-bottom">
+        <small>&copy; 2024 희망나눔. 모든 권리 보유.</small>
+      </div>
+    </footer>
+
+    <script src="../javascript/session.js"></script>
+    <script src="../javascript/category_programs.js"></script>
+  </body>
+</html>

@@ -15,7 +15,7 @@ const pool = mysql.createPool({
   port: Number(process.env.DB_PORT || 3307),
   user: process.env.DB_USER,
   password: process.env.DB_PASS,
-  database: process.env.DB_NAME,
+  database: process.env.DB_NAME || "mydb",
   waitForConnections: true,
   connectionLimit: 10,
 });
@@ -175,6 +175,11 @@ function normalizeProgram(program = {}) {
 
   const hostCompanyId = program.host_company_id ?? program.company_id ?? program.provider_company_id ?? null;
 
+  const companyName =
+    program.company_name ?? program.companyName ?? program.organization ?? program.host_company_name ?? "";
+  const contactNumber =
+    program.contact ?? program.company_phone ?? program.companyPhone ?? program.phone ?? program.host_company_phone ?? "";
+
   return {
     program_id: program.program_id ?? program.id ?? null,
     program_name: program.program_name ?? program.name ?? program.title ?? "",
@@ -185,13 +190,13 @@ function normalizeProgram(program = {}) {
     status_label: statusInfo.label,
     start_date: program.start_date ?? program.start_at ?? program.startDate ?? null,
     end_date: program.end_date ?? program.end_at ?? program.endDate ?? null,
-    total_amount: program.total_amount ?? program.totalAmount ?? program.goal_amount ?? null,
-    goal_amount: program.goal_amount ?? program.goalAmount ?? program.total_amount ?? null,
+    total_amount: program.total_amount ?? program.totalAmount ?? 0,
+    goal_amount: program.goal_amount ?? program.goalAmount ?? null,
     description: program.description ?? "",
     goal_description: program.goal_description ?? program.goal_text ?? program.purpose ?? program.description ?? "",
     location: program.location ?? program.place ?? program.address ?? "",
-    organization: program.organization ?? program.company_name ?? "",
-    contact: program.contact ?? program.company_phone ?? program.phone ?? "",
+    organization: companyName,
+    contact: contactNumber,
     host_company_id: hostCompanyId !== undefined ? Number(hostCompanyId) : null,
     created_at: program.created_at ?? null,
     updated_at: program.updated_at ?? null,
@@ -199,6 +204,41 @@ function normalizeProgram(program = {}) {
 }
 
 let sampleProgramState = SAMPLE_PROGRAMS.map((program) => normalizeProgram(program));
+let sampleDonationState = [];
+
+function recordSampleDonation(donation) {
+  if (!donation) return null;
+
+  const normalizedAmount = Number(donation.amount ?? donation.donation_amount ?? 0) || 0;
+  const programId = Number(donation.program_id ?? donation.programId ?? donation.program ?? 0) || null;
+
+  const storedDonation = {
+    donation_id: donation.donation_id ?? donation.id ?? `sample-${sampleDonationState.length + 1}`,
+    donor_id: donation.donor_id ?? donation.donorId ?? null,
+    program_id: programId,
+    amount: normalizedAmount,
+    message: donation.message ?? donation.memo ?? "",
+    created_at: donation.created_at ?? new Date().toISOString(),
+  };
+
+  sampleDonationState = [...sampleDonationState, storedDonation];
+
+  if (programId) {
+    const index = sampleProgramState.findIndex((program) => Number(program.program_id) === programId);
+    if (index !== -1) {
+      const program = sampleProgramState[index];
+      const nextTotal = Number(program.total_amount ?? 0) + normalizedAmount;
+      sampleProgramState[index] = {
+        ...program,
+        total_amount: nextTotal,
+        donation_count: Number(program.donation_count ?? 0) + 1,
+        updated_at: new Date().toISOString(),
+      };
+    }
+  }
+
+  return storedDonation;
+}
 
 function mapPrograms(programs) {
   if (!Array.isArray(programs)) return [];
@@ -531,7 +571,7 @@ async function runProgramMaintenance() {
     try {
       const [toInProgress] = await connection.execute(
         `
-        UPDATE program
+        UPDATE Program
         SET status = 'RUNNING'
         WHERE status = 'PLANNED'
           AND start_date IS NOT NULL
@@ -541,7 +581,7 @@ async function runProgramMaintenance() {
 
       const [toCompleted] = await connection.execute(
         `
-        UPDATE program
+        UPDATE Program
         SET status = 'FINISHED'
         WHERE status = 'RUNNING'
           AND end_date IS NOT NULL
@@ -551,7 +591,7 @@ async function runProgramMaintenance() {
 
       const [deleted] = await connection.execute(
         `
-        DELETE FROM program
+        DELETE FROM Program
         WHERE end_date IS NOT NULL
           AND end_date < DATE_SUB(CURDATE(), INTERVAL 3 YEAR)
       `
@@ -591,7 +631,7 @@ app.get("/api/companies", async (req, res) => {
 
   try {
     const [companyRows] = await pool.query(
-      "SELECT company_id, company_name, contact, phone, address FROM company"
+      "SELECT host_company_id AS company_id, company_name, company_phone AS contact, company_phone AS phone, address FROM Program_Host_Company"
     );
     const companies = Array.isArray(companyRows) ? companyRows : [];
 
@@ -604,7 +644,7 @@ app.get("/api/companies", async (req, res) => {
 
       if (ids.length) {
         const [programRows] = await pool.query(
-          "SELECT program_id, title, status, category_id, host_company_id, start_date, end_date, goal_amount, description, place FROM program WHERE host_company_id IN (?)",
+          "SELECT program_id, title, status, category_id, host_company_id, start_date, end_date, goal_amount, description, place FROM Program WHERE host_company_id IN (?)",
           [ids]
         );
         const normalizedPrograms = mapPrograms(programRows);
@@ -694,7 +734,7 @@ app.get("/api/categories", async (req, res) => {
     }
 
     const orderBy = sortField === "category_name" ? "name" : "category_id";
-    const sql = `SELECT category_id, name, description FROM category ${
+    const sql = `SELECT category_id, name, description FROM Category ${
       clauses.length ? `WHERE ${clauses.join(" AND ")}` : ""
     } ORDER BY ${orderBy} ASC`;
 
@@ -728,13 +768,13 @@ app.post("/api/categories", async (req, res) => {
 
   try {
     if (category_id) {
-      await pool.execute("INSERT INTO category (category_id, name, description) VALUES (?, ?, ?)", [
+      await pool.execute("INSERT INTO Category (category_id, name, description) VALUES (?, ?, ?)", [
         Number(category_id),
         category_name,
         description,
       ]);
     } else {
-      const [result] = await pool.execute("INSERT INTO category (name, description) VALUES (?, ?)", [
+      const [result] = await pool.execute("INSERT INTO Category (name, description) VALUES (?, ?)", [
         category_name,
         description,
       ]);
@@ -776,7 +816,7 @@ app.delete("/api/categories/:categoryId", async (req, res) => {
   if (!categoryId) return res.status(400).json({ error: "categoryId 필수" });
 
   try {
-    const [result] = await pool.execute("DELETE FROM category WHERE category_id = ?", [Number(categoryId)]);
+    const [result] = await pool.execute("DELETE FROM Category WHERE category_id = ?", [Number(categoryId)]);
     if (result?.affectedRows) {
       sampleCategoryState = sampleCategoryState.filter(
         (category) => String(category.category_id) !== String(categoryId)
@@ -795,6 +835,30 @@ app.delete("/api/categories/:categoryId", async (req, res) => {
 
   sampleCategoryState.splice(index, 1);
   res.status(204).end();
+});
+
+app.get("/api/donor/programs", async (_req, res) => {
+  try {
+    const [rows] = await pool.query("CALL GetPrograms()");
+    const resultSet = Array.isArray(rows) ? (Array.isArray(rows[0]) ? rows[0] : rows) : [];
+    const normalized = sortPrograms(
+      mapPrograms(resultSet).filter((program) => program.status === "running"),
+      "deadline_asc"
+    );
+
+    if (normalized.length) {
+      res.json(normalized);
+      return;
+    }
+  } catch (error) {
+    console.error("진행 중 프로그램 조회 실패", error);
+  }
+
+  const fallback = sortPrograms(
+    sampleProgramState.filter((program) => program.status === "running"),
+    "deadline_asc"
+  );
+  res.json(fallback);
 });
 
 app.get("/api/programs", async (req, res) => {
@@ -870,7 +934,47 @@ app.get("/api/programs/:programId", async (req, res) => {
   if (!programId) return res.status(400).json({ error: "programId 필수" });
 
   try {
-    const [rows] = await pool.query("SELECT * FROM program WHERE program_id = ? LIMIT 1", [programId]);
+    const [rows] = await pool.query(
+      `
+        SELECT
+          p.program_id,
+          p.title,
+          p.status,
+          p.category_id,
+          c.name AS category_name,
+          p.host_company_id,
+          hc.company_name,
+          hc.company_phone,
+          hc.address,
+          p.start_date,
+          p.end_date,
+          p.goal_amount,
+          COALESCE(SUM(CASE WHEN d.status = 'PAID' THEN d.amount ELSE 0 END), 0) AS total_amount,
+          p.description,
+          p.place
+        FROM Program p
+        LEFT JOIN Category c ON c.category_id = p.category_id
+        LEFT JOIN Program_Host_Company hc ON hc.host_company_id = p.host_company_id
+        LEFT JOIN Donation d ON d.program_id = p.program_id
+        WHERE p.program_id = ?
+        GROUP BY
+          p.program_id,
+          p.title,
+          p.status,
+          p.category_id,
+          c.name,
+          p.host_company_id,
+          hc.company_name,
+          hc.company_phone,
+          hc.address,
+          p.start_date,
+          p.end_date,
+          p.goal_amount,
+          p.description,
+          p.place
+      `,
+      [programId]
+    );
     if (Array.isArray(rows) && rows[0]) {
       res.json(normalizeProgram(rows[0]));
       return;
@@ -888,6 +992,57 @@ app.get("/api/programs/:programId", async (req, res) => {
   res.status(404).json({ error: "프로그램을 찾을 수 없습니다." });
 });
 
+app.post("/api/donations", async (req, res) => {
+  const { donor_id: rawDonorId, program_id: rawProgramId, amount: rawAmount, message: rawMessage } = req.body ?? {};
+
+  const donor_id = Number(rawDonorId);
+  const program_id = Number(rawProgramId);
+  const amount = Number(rawAmount);
+  const message = typeof rawMessage === "string" ? rawMessage.trim() : null;
+
+  if (!donor_id || !program_id || !Number.isFinite(amount) || amount <= 0) {
+    return res.status(400).json({ error: "donor_id, program_id, amount(양수) 필수" });
+  }
+
+  try {
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [insertResult] = await connection.execute(
+        "INSERT INTO Donation (donor_id, program_id, subscription_id, amount, paid_at, payment_method, status, memo) VALUES (?, ?, NULL, ?, NOW(), 'CARD', 'PAID', ?)",
+        [donor_id, program_id, amount, message]
+      );
+
+      await connection.commit();
+
+      res.status(201).json({
+        donation_id: insertResult?.insertId ?? null,
+        donor_id,
+        program_id,
+        amount,
+        message,
+        paid_at: new Date().toISOString(),
+      });
+      return;
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error("기부 등록 실패", error);
+  }
+
+  const fallbackDonation = recordSampleDonation({ donor_id, program_id, amount, message });
+  if (!fallbackDonation) {
+    res.status(500).json({ error: "기부를 처리하지 못했습니다." });
+    return;
+  }
+
+  res.status(201).json(fallbackDonation);
+});
+
 app.patch("/api/programs/:programId/status", async (req, res) => {
   const { programId } = req.params ?? {};
   const { status: nextStatus } = req.body ?? {};
@@ -902,12 +1057,12 @@ app.patch("/api/programs/:programId/status", async (req, res) => {
     const dbStatus = statusInfo.db ?? nextStatus.toUpperCase();
 
     const [result] = await pool.execute(
-      "UPDATE program SET status = ?, updated_at = NOW() WHERE program_id = ?",
+      "UPDATE Program SET status = ?, updated_at = NOW() WHERE program_id = ?",
       [dbStatus, Number(programId)]
     );
 
     if (result?.affectedRows) {
-      const [rows] = await pool.query("SELECT * FROM program WHERE program_id = ? LIMIT 1", [programId]);
+      const [rows] = await pool.query("SELECT * FROM Program WHERE program_id = ? LIMIT 1", [programId]);
       res.json(normalizeProgram(rows?.[0]));
       return;
     }
@@ -938,7 +1093,7 @@ app.delete("/api/programs/:programId", async (req, res) => {
 
   try {
     const [result] = await pool.execute(
-      "DELETE FROM program WHERE program_id = ? AND status = 'pending'",
+      "DELETE FROM Program WHERE program_id = ? AND status = 'PLANNED'",
       [programId]
     );
     if (result?.affectedRows) {

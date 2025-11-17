@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>희망나눔 – 프로그램 상세</title>
+    <link rel="stylesheet" href="../../core/components/components.css" />
+    <link rel="stylesheet" href="../css/program_detail.css" />
+  </head>
+  <body class="page-program-detail">
+    <header class="detail-header">
+      <div class="container detail-header__inner">
+        <a class="logo" href="homepage.html" aria-label="희망나눔 로고">
+          <span class="logo-icon" aria-hidden="true">❤</span>
+          <span class="logo-text">희망나눔</span>
+        </a>
+        <nav class="detail-header__nav">
+          <a href="homepage.html" class="back-link">홈으로</a>
+          <a href="category_programs.html" class="back-link" data-role="back-to-category">분야로 돌아가기</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="detail-main" aria-live="polite">
+      <div class="container">
+        <article class="program-detail" data-role="program-detail" hidden>
+          <header class="program-detail__hero">
+            <div class="program-detail__media" data-field="cover" aria-hidden="true"></div>
+            <div class="program-detail__meta">
+              <span class="program-detail__badge" data-field="category">카테고리</span>
+              <h1 data-field="title">프로그램 제목</h1>
+              <p class="program-detail__summary" data-field="summary"></p>
+              <ul class="program-detail__info">
+                <li>
+                  <span class="label">진행 상태</span>
+                  <strong data-field="status">진행 중</strong>
+                </li>
+                <li>
+                  <span class="label">진행 기간</span>
+                  <strong data-field="period">2024.01.01~2024.12.31</strong>
+                </li>
+                <li>
+                  <span class="label">진행 장소</span>
+                  <strong data-field="location">장소 미정</strong>
+                </li>
+                <li>
+                  <span class="label">목표 금액</span>
+                  <strong data-field="goal">-</strong>
+                </li>
+                <li>
+                  <span class="label">누적 모금액</span>
+                  <strong data-field="total">-</strong>
+                </li>
+              </ul>
+              <div class="program-detail__cta">
+                <a href="donation.html" class="btn btn-primary" data-action="donate">기부하기</a>
+              </div>
+            </div>
+          </header>
+
+          <section class="program-detail__body">
+            <h2>프로그램 소개</h2>
+            <p data-field="description">프로그램 소개가 준비 중입니다.</p>
+          </section>
+
+          <section class="program-detail__body" data-role="additional-info" hidden>
+            <h2>추가 정보</h2>
+            <p data-field="additional"></p>
+          </section>
+        </article>
+
+        <section class="program-detail__empty" data-role="empty-state" hidden>
+          <div class="empty-card">
+            <h2>프로그램을 찾지 못했습니다.</h2>
+            <p>요청하신 프로그램이 존재하지 않거나 종료된 상태입니다.</p>
+            <div class="empty-actions">
+              <a class="btn btn-secondary" href="homepage.html">홈으로 이동</a>
+              <a class="btn btn-primary" href="category_programs.html">진행 중 프로그램 보기</a>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="detail-footer">
+      <div class="container footer-bottom">
+        <small>&copy; 2024 희망나눔. 모든 권리 보유.</small>
+      </div>
+    </footer>
+
+    <script src="../javascript/session.js"></script>
+    <script src="../javascript/program_detail.js"></script>
+  </body>
+</html>

@@ -105,21 +105,56 @@
     gap: 1.5rem;
 }
 
+.page-home .causes-grid--skeleton {
+    margin-bottom: 1.5rem;
+}
+
 .page-home .cause-card {
     background-color: var(--color-surface);
     border-radius: var(--radius-sm);
     padding: 2rem;
     box-shadow: var(--shadow-sm);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    cursor: pointer;
+    min-height: 210px;
 }
 
-.page-home .cause-card:hover {
+.page-home .cause-card:hover,
+.page-home .cause-card:focus-visible {
     transform: translateY(-6px);
     box-shadow: var(--shadow-md);
 }
 
+.page-home .cause-card:focus-visible {
+    outline: 3px solid rgba(37, 99, 235, 0.4);
+    outline-offset: 3px;
+}
+
 .page-home .cause-card h3 {
     margin-bottom: 0.75rem;
+    font-size: 1.2rem;
+}
+
+.page-home .cause-card__icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(240, 84, 84, 0.12));
+    color: rgba(31, 41, 55, 0.9);
+}
+
+
+.page-home .cause-card__description {
+    color: var(--color-text-light);
+    line-height: 1.5;
+    flex: 1 1 auto;
 }
 
 .page-home .text-link {
@@ -131,6 +166,19 @@
     transition: color 0.2s ease;
 }
 
+.page-home button.text-link {
+    border: 0;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+    font: inherit;
+}
+
+.page-home button.text-link:focus-visible {
+    outline: 2px solid var(--color-secondary);
+    outline-offset: 2px;
+}
+
 .page-home .text-link::after {
     content: "→";
     font-size: 0.85rem;
@@ -138,6 +186,78 @@
 
 .page-home .text-link:hover {
     color: var(--color-primary);
+}
+
+.page-home .causes-empty {
+    text-align: center;
+    color: var(--color-text-light);
+    margin-top: 1.5rem;
+    font-size: 0.95rem;
+}
+
+.page-home .cause-card--skeleton {
+    cursor: default;
+    pointer-events: none;
+    padding: 0;
+    overflow: hidden;
+}
+
+.page-home .cause-card--skeleton > * {
+    margin: 0;
+}
+
+.page-home .cause-card--skeleton .skeleton-block {
+    background: linear-gradient(90deg, rgba(229, 234, 245, 0.65) 0%, rgba(209, 219, 235, 0.65) 50%, rgba(229, 234, 245, 0.65) 100%);
+    background-size: 200% 100%;
+    animation: page-home-skeleton 1.4s ease-in-out infinite;
+    border-radius: 12px;
+}
+
+.page-home .cause-card--skeleton .skeleton-block--icon {
+    width: 56px;
+    height: 56px;
+    margin: 2rem 0 1.25rem;
+}
+
+.page-home .cause-card--skeleton .skeleton-block--title {
+    width: 70%;
+    height: 20px;
+    margin-bottom: 1rem;
+}
+
+.page-home .cause-card--skeleton .skeleton-block--text {
+    width: 90%;
+    height: 16px;
+    margin-bottom: 0.75rem;
+}
+
+.page-home .cause-card--skeleton .skeleton-block--button {
+    width: 120px;
+    height: 34px;
+    margin-top: auto;
+    margin-bottom: 2rem;
+    border-radius: 999px;
+}
+
+.page-home .cause-card--skeleton-inner {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 0 2rem;
+}
+
+.page-home .cause-card--skeleton .skeleton-block--button {
+    align-self: flex-start;
+}
+
+.page-home .cause-card--skeleton .skeleton-block--text:last-of-type {
+    width: 60%;
+}
+
+.page-home .cause-card--skeleton,
+.page-home .cause-card--skeleton .cause-card__icon,
+.page-home .cause-card--skeleton button {
+    box-shadow: none;
 }
 
 .page-home .highlight {
@@ -235,6 +355,7 @@
         flex-direction: column;
         text-align: center;
     }
+
 }
 
 @media (max-width: 640px) {
@@ -248,5 +369,14 @@
 
     .page-home .cta-inner {
         align-items: stretch;
+    }
+}
+
+@keyframes page-home-skeleton {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
     }
 }
