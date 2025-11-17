@@ -39,7 +39,12 @@
               플랫폼입니다. 지금 바로 함께해요.
             </p>
             <div class="hero-actions">
-              <a class="btn btn-primary" href="#cta">지금 기부하기</a>
+              <a
+                class="btn btn-primary"
+                href="donation.html"
+                data-action="donate-now"
+                >지금 기부하기</a
+              >
               <a class="btn btn-link" href="#stories">스토리 보기</a>
             </div>
           </div>
@@ -80,28 +85,11 @@
           <h2>함께하는 기부 분야</h2>
           <p>관심 있는 분야를 선택하고 기부 프로그램를 확인해보세요.</p>
         </div>
-        <div class="container causes-grid">
-          <article class="cause-card">
-            <h3>아동 지원</h3>
-            <p>아이들의 건강과 교육을 위해 필요한 지원을 제공합니다.</p>
-            <a href="#" class="text-link">프로그램 보기</a>
-          </article>
-          <article class="cause-card">
-            <h3>환경 보호</h3>
-            <p>지구를 지키는 다양한 환경 캠페인에 함께하세요.</p>
-            <a href="#" class="text-link">프로그램 보기</a>
-          </article>
-          <article class="cause-card">
-            <h3>취약 계층</h3>
-            <p>소외된 이웃에게 실질적인 도움을 전달합니다.</p>
-            <a href="#" class="text-link">프로그램 보기</a>
-          </article>
-          <article class="cause-card">
-            <h3>긴급 구호</h3>
-            <p>재난과 위기 상황에 즉각적인 지원이 필요합니다.</p>
-            <a href="#" class="text-link">프로그램 보기</a>
-          </article>
-        </div>
+        <div class="container causes-grid causes-grid--skeleton" data-role="category-skeleton"></div>
+        <div class="container causes-grid" data-role="category-list"></div>
+        <p class="causes-empty" data-role="category-empty" hidden>
+          아직 등록된 기부 분야가 없습니다. 잠시 후 다시 확인해 주세요.
+        </p>
       </section>
 
       <section class="highlight" id="stories">
@@ -150,7 +138,12 @@
             <h2>함께하면 더 큰 변화를 만들 수 있습니다</h2>
             <p>관심 있는 프로젝트를 선택하고 지금 바로 기부를 시작하세요.</p>
           </div>
-          <a class="btn btn-primary btn-large" href="#">지금 기부하기</a>
+          <a
+            class="btn btn-primary btn-large"
+            href="donation.html"
+            data-action="donate-now"
+            >지금 기부하기</a
+          >
         </div>
       </section>
     </main>
