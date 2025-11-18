@@ -4,6 +4,7 @@
  */
 const API_BASE = "http://localhost:8080/api";
 const CATEGORY_DISPLAY_LIMIT = 6;
+const CATEGORY_ACCESS_ROLES = new Set(["admin", "donor", "company"]);
 
 const CATEGORY_RULES = [
   {
@@ -160,12 +161,34 @@ function renderCategories({ listContainer, skeletonContainer, emptyElement }, ca
   listContainer.appendChild(fragment);
 }
 
+function getFallbackCategories() {
+  return FALLBACK_CATEGORIES.slice(0, CATEGORY_DISPLAY_LIMIT);
+}
+
+function hideSkeleton(container) {
+  if (!container) return;
+  container.replaceChildren();
+  container.setAttribute("hidden", "true");
+  container.style.display = "none";
+}
+
 async function loadCategories(elements) {
-  const { listContainer, skeletonContainer, emptyElement } = elements;
-  renderCategorySkeleton(skeletonContainer);
-  if (skeletonContainer) {
-    skeletonContainer.removeAttribute("hidden");
-    skeletonContainer.style.display = "grid";
+  const { listContainer, skeletonContainer } = elements;
+  if (!listContainer) return;
+
+  const session = window.donorSession?.getSession?.();
+  const hasDynamicAccess =
+    session && session.role ? CATEGORY_ACCESS_ROLES.has(session.role) : false;
+
+  if (!hasDynamicAccess) {
+    renderCategories(elements, getFallbackCategories());
+    hideSkeleton(skeletonContainer);
+  } else {
+    renderCategorySkeleton(skeletonContainer);
+    if (skeletonContainer) {
+      skeletonContainer.removeAttribute("hidden");
+      skeletonContainer.style.display = "grid";
+    }
   }
 
   try {
@@ -176,14 +199,18 @@ async function loadCategories(elements) {
     const categories = Array.isArray(data) ? data.slice(0, CATEGORY_DISPLAY_LIMIT) : [];
 
     if (!categories.length) {
-      renderCategories(elements, FALLBACK_CATEGORIES.slice(0, CATEGORY_DISPLAY_LIMIT));
+      if (hasDynamicAccess) {
+        renderCategories(elements, getFallbackCategories());
+      }
       return;
     }
 
     renderCategories(elements, categories);
   } catch (error) {
     console.error(error);
-    renderCategories(elements, FALLBACK_CATEGORIES.slice(0, CATEGORY_DISPLAY_LIMIT));
+    if (hasDynamicAccess) {
+      renderCategories(elements, getFallbackCategories());
+    }
   }
 }
 
