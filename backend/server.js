@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import mysql from "mysql2/promise";
 import cron from "node-cron";
+import crypto from "crypto";
 
 dotenv.config();
 
@@ -19,6 +20,10 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
 });
+
+function hashPassword(rawPassword = "") {
+  return crypto.createHash("sha256").update(String(rawPassword)).digest("hex");
+}
 
 const SAMPLE_PROGRAMS = [
   {
@@ -84,9 +89,11 @@ const SAMPLE_PROGRAMS = [
 ];
 
 const PROGRAM_STATUS = {
+  pending: { code: "pending", label: "신청대기", db: "PENDING" },
   planned: { code: "planned", label: "계획", db: "PLANNED" },
   running: { code: "running", label: "진행 중", db: "RUNNING" },
   finished: { code: "finished", label: "종료", db: "FINISHED" },
+  rejected: { code: "rejected", label: "반려", db: "REJECTED" },
 };
 
 const STATUS_LABEL_TO_CODE = Object.values(PROGRAM_STATUS).reduce((acc, item) => {
@@ -95,17 +102,21 @@ const STATUS_LABEL_TO_CODE = Object.values(PROGRAM_STATUS).reduce((acc, item) =>
 }, {});
 
 const STATUS_DB_TO_CODE = {
+  PENDING: "pending",
   PLANNED: "planned",
   RUNNING: "running",
   FINISHED: "finished",
+  REJECTED: "rejected",
 };
 
 const STATUS_ALIAS_TO_CODE = {
-  pending: "planned",
+  신청대기: "pending",
+  대기: "pending",
+  pending: "pending",
   approved: "running",
   completed: "finished",
   in_progress: "running",
-  rejected: "planned",
+  rejected: "rejected",
 };
 
 const PROGRAM_CATEGORY = {
@@ -527,6 +538,66 @@ app.post("/api/donors", async (req, res) => {
   }
 });
 
+app.post("/api/companies", async (req, res) => {
+  const {
+    companyName,
+    company_name,
+    companyPhone,
+    company_phone,
+    companyAddress,
+    address,
+    businessNo,
+    business_no,
+    companyRegistration,
+    email,
+    password,
+  } = req.body ?? {};
+
+  const name = (companyName ?? company_name ?? "").trim();
+  const phone = (companyPhone ?? company_phone ?? "").trim();
+  const normalizedPhone = phone || null;
+  const normalizedAddress = (companyAddress ?? address ?? "").trim() || null;
+  const normalizedBizNo = (businessNo ?? business_no ?? companyRegistration ?? "").trim() || null;
+  const loginEmail = (email ?? "").trim();
+  const loginPassword = password ?? "";
+
+  if (!name || !loginEmail || !loginPassword) {
+    return res.status(400).json({ error: "companyName, email, password 필수" });
+  }
+
+  const passwordHash = hashPassword(loginPassword);
+
+  try {
+    const sql = `
+      INSERT INTO Program_Host_Company (company_name, address, company_phone, business_no, email, password_hash)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+    const [r] = await pool.execute(sql, [
+      name,
+      normalizedAddress,
+      normalizedPhone,
+      normalizedBizNo,
+      loginEmail,
+      passwordHash,
+    ]);
+
+    res.status(201).json({
+      host_company_id: r.insertId,
+      company_name: name,
+      address: normalizedAddress,
+      company_phone: normalizedPhone,
+      business_no: normalizedBizNo,
+      email: loginEmail,
+      role: "company",
+    });
+  } catch (e) {
+    if (e?.code === "ER_DUP_ENTRY") {
+      return res.status(409).json({ error: "이미 등록된 이메일입니다." });
+    }
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body ?? {};
   const loginId = email?.trim();
@@ -554,12 +625,28 @@ app.post("/api/login", async (req, res) => {
     const [rows] = await pool.query(sql, [loginId]);
     const donor = Array.isArray(rows) ? rows[0] : undefined;
 
-    if (!donor || donor.stored_password !== loginPw) {
-      return res.status(401).json({ error: "이메일 또는 비밀번호가 올바르지 않습니다." });
+    if (donor && donor.stored_password === loginPw) {
+      const { stored_password, ...safeDonor } = donor;
+      return res.json({ ...safeDonor, role: "donor" });
     }
 
-    const { stored_password, ...safeDonor } = donor;
-    res.json({ ...safeDonor, role: "donor" });
+    const companySql =
+      "SELECT host_company_id, company_name, email, password_hash FROM Program_Host_Company WHERE email = ? LIMIT 1";
+    const [companyRows] = await pool.query(companySql, [loginId]);
+    const company = Array.isArray(companyRows) ? companyRows[0] : undefined;
+
+    const hashedInput = hashPassword(loginPw);
+
+    if (company && company.password_hash === hashedInput) {
+      return res.json({
+        role: "company",
+        company_id: company.host_company_id,
+        company_name: company.company_name,
+        email: company.email,
+      });
+    }
+
+    return res.status(401).json({ error: "이메일 또는 비밀번호가 올바르지 않습니다." });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -867,6 +954,8 @@ app.get("/api/programs", async (req, res) => {
     category: rawCategory,
     status: rawStatus,
     sort: rawSort,
+    host_company_id: rawHostCompanyId,
+    hostCompanyId: rawHostCompanyIdAlt,
   } = req.query ?? {};
 
   const keyword = typeof rawKeyword === "string" && rawKeyword.trim().length ? rawKeyword.trim() : null;
@@ -875,7 +964,10 @@ app.get("/api/programs", async (req, res) => {
       ? String(rawCategory).trim()
       : null;
 
-  const allowedStatuses = new Set(["all", "planned", "running", "finished"]);
+  const hostCompanyId =
+    rawHostCompanyId ?? rawHostCompanyIdAlt ?? null;
+
+  const allowedStatuses = new Set(["all", "pending", "planned", "running", "finished", "rejected"]);
   const status =
     typeof rawStatus === "string" && allowedStatuses.has(rawStatus) && rawStatus !== "all"
       ? rawStatus.toLowerCase()
@@ -891,41 +983,217 @@ app.get("/api/programs", async (req, res) => {
   ]);
   const sort = typeof rawSort === "string" && allowedSorts.has(rawSort) ? rawSort : "deadline_asc";
 
+  // 회사별 필터가 있을 때는 별도 쿼리로 조회
+  if (hostCompanyId !== null && hostCompanyId !== undefined && hostCompanyId !== "") {
+    try {
+      const clauses = ["host_company_id = ?"];
+      const params = [hostCompanyId];
+
+      if (category) {
+        clauses.push("category_id = ?");
+        params.push(category);
+      }
+
+      if (status) {
+        clauses.push("status = ?");
+        params.push(status.toUpperCase());
+      }
+
+      const whereSql = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+
+      const [rows] = await pool.query(
+        `SELECT program_id, title, status, category_id, host_company_id, start_date, end_date, goal_amount, description, place, account_number
+         FROM Program
+         ${whereSql}
+         ORDER BY program_id DESC`,
+        params
+      );
+
+      const normalized = sortPrograms(mapPrograms(rows), sort);
+      return res.json(normalized);
+    } catch (error) {
+      console.error("회사별 프로그램 조회 실패", error);
+      const fallback = sampleProgramState.filter((program) => {
+        const matchHost = String(program.host_company_id ?? "") === String(hostCompanyId);
+        const matchCategory = category
+          ? String(program.category_id ?? program.category) === String(category)
+          : true;
+        const matchStatus = status ? String(program.status) === String(status) : true;
+        const matchKeyword = keyword
+          ? [program.program_id, program.program_name, program.title]
+              .map((value) => String(value ?? "").toLowerCase())
+              .some((value) => value.includes(keyword.toLowerCase()))
+          : true;
+        return matchHost && matchCategory && matchStatus && matchKeyword;
+      });
+
+      return res.json(sortPrograms(mapPrograms(fallback), sort));
+    }
+  }
+
   try {
-    const [rows] = await pool.query("CALL search_programs(?, ?, ?, ?)", [
-      keyword,
-      category,
-      status ? status.toUpperCase() : null,
-      sort,
-    ]);
-    const resultSet = Array.isArray(rows)
-      ? Array.isArray(rows[0])
-        ? rows[0]
-        : rows
-      : [];
-    const normalized = sortPrograms(mapPrograms(resultSet), sort);
-    if (normalized.length) {
-      res.json(normalized);
-      return;
+    const clauses = [];
+    const params = [];
+
+    if (keyword) {
+      clauses.push(
+        "(p.title LIKE ? OR p.description LIKE ? OR p.place LIKE ? OR CAST(p.program_id AS CHAR) LIKE ?)"
+      );
+      const like = `%${keyword}%`;
+      params.push(like, like, like, like);
     }
 
-    const fallback = sampleProgramState.filter((program) => {
-      const matchCategory = category
-        ? String(program.category_id ?? program.category) === String(category)
-        : true;
-      const matchStatus = status ? String(program.status) === String(status) : true;
-      const matchKeyword = keyword
-        ? [program.program_id, program.program_name, program.title]
-            .map((value) => String(value ?? "").toLowerCase())
-            .some((value) => value.includes(keyword.toLowerCase()))
-        : true;
-      return matchCategory && matchStatus && matchKeyword;
-    });
+    if (category) {
+      clauses.push("p.category_id = ?");
+      params.push(category);
+    }
 
-    res.json(sortPrograms(mapPrograms(fallback), sort));
+    if (status) {
+      clauses.push("p.status = ?");
+      params.push(status.toUpperCase());
+    }
+
+    const whereSql = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+
+    let orderSql = "ORDER BY p.end_date ASC, p.program_id ASC";
+    if (sort === "deadline_desc") orderSql = "ORDER BY p.end_date DESC, p.program_id DESC";
+    else if (sort === "deadline_asc") orderSql = "ORDER BY p.end_date ASC, p.program_id ASC";
+    else if (sort === "start_desc") orderSql = "ORDER BY p.start_date DESC, p.program_id DESC";
+    else if (sort === "start_asc") orderSql = "ORDER BY p.start_date ASC, p.program_id ASC";
+    else if (sort === "amount_desc")
+      orderSql = "ORDER BY COALESCE(p.goal_amount, 0) DESC, p.program_id DESC";
+    else if (sort === "amount_asc")
+      orderSql = "ORDER BY COALESCE(p.goal_amount, 0) ASC, p.program_id ASC";
+
+    const [rows] = await pool.query(
+      `
+        SELECT
+          p.program_id,
+          p.title,
+          p.status,
+          p.category_id,
+          c.name AS category_name,
+          p.host_company_id,
+          hc.company_name,
+          hc.company_phone,
+          hc.address,
+          p.start_date,
+          p.end_date,
+          p.goal_amount,
+          COALESCE(SUM(CASE WHEN d.status = 'PAID' THEN d.amount ELSE 0 END), 0) AS total_amount,
+          p.description,
+          p.place
+        FROM Program p
+        LEFT JOIN Category c ON c.category_id = p.category_id
+        LEFT JOIN Program_Host_Company hc ON hc.host_company_id = p.host_company_id
+        LEFT JOIN Donation d ON d.program_id = p.program_id
+        ${whereSql}
+        GROUP BY
+          p.program_id,
+          p.title,
+          p.status,
+          p.category_id,
+          c.name,
+          p.host_company_id,
+          hc.company_name,
+          hc.company_phone,
+          hc.address,
+          p.start_date,
+          p.end_date,
+          p.goal_amount,
+          p.description,
+          p.place
+        ${orderSql}
+      `,
+      params
+    );
+
+    const normalized = sortPrograms(mapPrograms(rows), sort);
+    res.json(normalized);
   } catch (e) {
     console.error("프로그램 조회 실패", e);
     res.json(sortPrograms(mapPrograms(sampleProgramState), sort));
+  }
+});
+
+app.post("/api/programs", async (req, res) => {
+  const {
+    title,
+    program_title,
+    start_date,
+    startDate,
+    end_date,
+    endDate,
+    description,
+    account_number,
+    accountNumber,
+    goal_amount,
+    goalAmount,
+    category_id,
+    categoryId,
+    host_company_id,
+    hostCompanyId,
+    place,
+    location,
+  } = req.body ?? {};
+
+  const normalizedTitle = (title ?? program_title ?? "").trim();
+  const normalizedDescription = (description ?? "").trim();
+  const normalizedStatus = "PENDING"; // 신청 시에는 모두 신청대기 상태로 고정
+
+  const normalizedStart = start_date ?? startDate ?? null;
+  const normalizedEnd = end_date ?? endDate ?? null;
+  const normalizedAccount = (account_number ?? accountNumber ?? "").trim() || null;
+  const normalizedGoal = goal_amount ?? goalAmount ?? null;
+  const normalizedCategory = category_id ?? categoryId ?? null;
+  const normalizedHost = host_company_id ?? hostCompanyId ?? null;
+  const normalizedPlace = (place ?? location ?? "").trim() || null;
+
+  if (!normalizedTitle || !normalizedCategory || !normalizedHost || !normalizedStart || !normalizedEnd) {
+    return res.status(400).json({ error: "title, category_id, host_company_id, start_date, end_date 필수" });
+  }
+
+  try {
+    const sql = `
+      INSERT INTO Program
+        (title, start_date, end_date, description, status, account_number, goal_amount, category_id, host_company_id, place)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const [r] = await pool.execute(sql, [
+      normalizedTitle,
+      normalizedStart,
+      normalizedEnd,
+      normalizedDescription,
+      normalizedStatus,
+      normalizedAccount,
+      normalizedGoal,
+      normalizedCategory,
+      normalizedHost,
+      normalizedPlace,
+    ]);
+
+    const createdProgram = {
+      program_id: r.insertId,
+      title: normalizedTitle,
+      start_date: normalizedStart,
+      end_date: normalizedEnd,
+      description: normalizedDescription,
+      status: normalizedStatus,
+      account_number: normalizedAccount,
+      goal_amount: normalizedGoal,
+      category_id: normalizedCategory,
+      host_company_id: normalizedHost,
+      place: normalizedPlace,
+    };
+
+    // 샘플 데이터 사용 중인 경우 새 프로그램을 추가해 둔다.
+    sampleProgramState = [{ ...createdProgram, program_name: normalizedTitle }, ...sampleProgramState];
+
+    res.status(201).json(createdProgram);
+  } catch (e) {
+    console.error("프로그램 생성 실패", e);
+    res.status(500).json({ error: e.message });
   }
 });
 
@@ -1047,19 +1315,24 @@ app.patch("/api/programs/:programId/status", async (req, res) => {
   const { programId } = req.params ?? {};
   const { status: nextStatus } = req.body ?? {};
 
-  const allowedStatuses = new Set(["planned", "running", "finished"]);
-  if (!programId || !nextStatus || !allowedStatuses.has(nextStatus)) {
-    return res.status(400).json({ error: "programId, status(planned|running|finished) 필수" });
+  if (!programId || !nextStatus) {
+    return res.status(400).json({ error: "programId, status 필수" });
+  }
+
+  const allowedStatuses = new Set(["pending", "planned", "running", "finished", "rejected"]);
+  const normalizedKey = nextStatus.toString().toLowerCase();
+  if (!allowedStatuses.has(normalizedKey)) {
+    return res.status(400).json({ error: "programId, status(pending|planned|running|finished|rejected) 필수" });
   }
 
   try {
-    const statusInfo = PROGRAM_STATUS[nextStatus] ?? normalizeStatus(nextStatus);
-    const dbStatus = statusInfo.db ?? nextStatus.toUpperCase();
+    const statusInfo = PROGRAM_STATUS[normalizedKey] ?? normalizeStatus(normalizedKey);
+    const dbStatus = statusInfo.db ?? normalizedKey.toUpperCase();
 
-    const [result] = await pool.execute(
-      "UPDATE Program SET status = ?, updated_at = NOW() WHERE program_id = ?",
-      [dbStatus, Number(programId)]
-    );
+    const [result] = await pool.execute("UPDATE Program SET status = ? WHERE program_id = ?", [
+      dbStatus,
+      Number(programId),
+    ]);
 
     if (result?.affectedRows) {
       const [rows] = await pool.query("SELECT * FROM Program WHERE program_id = ? LIMIT 1", [programId]);
@@ -1073,7 +1346,7 @@ app.patch("/api/programs/:programId/status", async (req, res) => {
   const index = sampleProgramState.findIndex((program) => String(program.program_id) === String(programId));
   if (index === -1) return res.status(404).json({ error: "프로그램을 찾을 수 없습니다." });
 
-  const statusInfo = PROGRAM_STATUS[nextStatus] ?? normalizeStatus(nextStatus);
+  const statusInfo = PROGRAM_STATUS[normalizedKey] ?? normalizeStatus(normalizedKey);
 
   sampleProgramState[index] = {
     ...sampleProgramState[index],

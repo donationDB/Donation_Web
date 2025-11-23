@@ -4,7 +4,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const stored = window.donorSession?.getSession?.();
   if (stored) {
-    const redirect = stored.role === "admin" ? "admin_dashboard.html" : "homepage.html";
+    let redirect = "homepage.html";
+    if (stored.role === "admin") redirect = "admin_dashboard.html";
+    if (stored.role === "company") redirect = "program_apply.html";
     window.location.replace(redirect);
     return;
   }
@@ -41,7 +43,13 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      alert(`${account.name}님 환영합니다!`);
+      if (account.role === "company") {
+        alert(`${account.company_name ?? account.email} 파트너님 환영합니다!`);
+        window.location.replace("program_apply.html");
+        return;
+      }
+
+      alert(`${account.name ?? account.email}님 환영합니다!`);
       window.location.replace("homepage.html");
     } catch (error) {
       console.error(error);

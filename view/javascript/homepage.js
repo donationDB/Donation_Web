@@ -261,8 +261,12 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const isAdmin = session.role === "admin";
+      const isCompany = session.role === "company";
       const dashboardButton = isAdmin
         ? `<a class="btn account-dashboard" href="admin_dashboard.html">관리자 대시보드</a>`
+        : "";
+      const programApplyButton = isCompany
+        ? `<a class="btn account-dashboard" href="program_apply.html">프로그램 신청</a>`
         : "";
 
       accountSlot.innerHTML = `
@@ -274,6 +278,7 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
           <div class="account-summary__actions">
             ${dashboardButton}
+            ${programApplyButton}
             <button type="button" class="btn btn-secondary account-logout" data-action="logout">로그아웃</button>
           </div>
         </div>

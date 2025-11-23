@@ -1,0 +1,44 @@
+.page-program-apply .auth-card {
+  max-width: 720px;
+}
+
+.page-program-apply .form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.inline-group .inline-control {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.inline-group input {
+  flex: 1;
+}
+
+.helper-text {
+  margin-top: 6px;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.helper-text.ok {
+  color: #00875a;
+}
+
+.helper-text.error {
+  color: #d02f2f;
+}
+
+@media (max-width: 640px) {
+  .page-program-apply .auth-card {
+    padding: 24px 20px;
+  }
+
+  .inline-group .inline-control {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

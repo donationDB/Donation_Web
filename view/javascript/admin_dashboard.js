@@ -21,12 +21,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const programTableBody = document.querySelector(
     "[data-role='program-table-body']"
   );
+  const applicationTableBody = document.querySelector(
+    "[data-role='application-table-body']"
+  );
   const companyForm = document.querySelector("[data-role='company-form']");
   const companyActiveFilters = document.querySelector(
     "[data-role='company-active-filters']"
   );
   const companyTableBody = document.querySelector(
     "[data-role='company-table-body']"
+  );
+  const applicationRefreshButton = document.querySelector(
+    "[data-action='refresh-applications']"
   );
   const logoutButton = document.querySelector("[data-action='logout']");
   const API_BASE = "http://localhost:8080";
@@ -65,26 +71,37 @@ document.addEventListener("DOMContentLoaded", () => {
     results: [],
   };
 
+  const applicationState = {
+    loading: false,
+    results: [],
+  };
+
   const programCategoryLabels = {
     all: "전체",
     others: "기타",
   };
 
   const programStatusLabels = {
+    pending: "신청대기",
     planned: "계획",
     running: "진행 중",
     finished: "종료",
+    rejected: "반려",
   };
 
   const programStatusFallback = {
+    PENDING: "pending",
     PLANNED: "planned",
     RUNNING: "running",
     FINISHED: "finished",
-    pending: "planned",
+    REJECTED: "rejected",
+    pending: "pending",
     approved: "running",
     completed: "finished",
-    "승인 전": "planned",
-    승인전: "planned",
+    "승인 전": "pending",
+    승인전: "pending",
+    대기: "pending",
+    신청대기: "pending",
     계획: "planned",
     "계획 중": "planned",
     "진행 중": "running",
@@ -92,6 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
     진행: "running",
     종료: "finished",
     완료: "finished",
+    반려: "rejected",
   };
 
   const programSortLabels = {
@@ -317,6 +335,10 @@ document.addEventListener("DOMContentLoaded", () => {
     return `${amount.toLocaleString("ko-KR")}원`;
   }
 
+  function formatAmount(value) {
+    return formatCurrency(value);
+  }
+
   function renderProgramActiveFilters() {
     if (!programActiveFilters) return;
 
@@ -463,6 +485,78 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function renderApplicationTable({
+    rows = [],
+    loading = false,
+    emptyMessage = "신청된 프로그램이 없습니다.",
+  }) {
+    if (!applicationTableBody) return;
+
+    applicationTableBody.innerHTML = "";
+
+    if (loading) {
+      const loadingRow = document.createElement("tr");
+      const loadingCell = document.createElement("td");
+      loadingCell.colSpan = 9;
+      loadingCell.textContent = "프로그램 신청 목록을 불러오는 중입니다...";
+      loadingRow.appendChild(loadingCell);
+      applicationTableBody.appendChild(loadingRow);
+      return;
+    }
+
+    if (!rows.length) {
+      const emptyRow = document.createElement("tr");
+      const emptyCell = document.createElement("td");
+      emptyCell.colSpan = 9;
+      emptyCell.textContent = emptyMessage;
+      emptyRow.appendChild(emptyCell);
+      applicationTableBody.appendChild(emptyRow);
+      return;
+    }
+
+    rows.forEach((program) => {
+      const row = document.createElement("tr");
+
+      const programId = program.program_id ?? program.id ?? "-";
+      const programName = program.program_name ?? program.name ?? program.title ?? "-";
+      const companyName = program.company_name ?? program.organization ?? "-";
+      const categoryInfo = resolveCategoryInfo(program);
+      const statusInfo = resolveStatusInfo(program);
+
+      const startDate = formatDate(program.start_date ?? program.start_at ?? program.startDate);
+      const endDate = formatDate(program.end_date ?? program.end_at ?? program.endDate);
+      const goalAmount = formatAmount(program.goal_amount ?? program.goalAmount);
+
+      const columns = [
+        programId,
+        programName,
+        companyName,
+        categoryInfo.label,
+        startDate,
+        endDate,
+        goalAmount,
+        statusInfo.label ?? statusInfo.code ?? "-",
+      ];
+
+      columns.forEach((value) => {
+        const cell = document.createElement("td");
+        cell.textContent = value ?? "-";
+        row.appendChild(cell);
+      });
+
+      const actionCell = document.createElement("td");
+      actionCell.innerHTML = `
+        <div class="table-actions">
+          <button type="button" class="btn btn-secondary btn-compact" data-action="approve-application" data-program-id="${programId}">승인</button>
+          <button type="button" class="btn btn-outline btn-compact" data-action="reject-application" data-program-id="${programId}">반려</button>
+        </div>
+      `;
+      row.appendChild(actionCell);
+
+      applicationTableBody.appendChild(row);
+    });
+  }
+
   async function fetchPrograms() {
     const params = new URLSearchParams();
 
@@ -491,6 +585,52 @@ document.addEventListener("DOMContentLoaded", () => {
         error.message || "프로그램 정보를 불러오는 중 오류가 발생했습니다."
       );
       programState.results = [];
+    }
+  }
+
+  async function fetchApplications() {
+    if (!applicationTableBody) return;
+
+    applicationState.loading = true;
+    renderApplicationTable({ loading: true });
+
+    try {
+      const response = await fetch(`${API_BASE}/api/programs?sort=start_desc&status=pending`);
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "응답이 올바르지 않습니다.");
+      }
+      const data = await response.json();
+      applicationState.results = Array.isArray(data) ? data : [];
+      renderApplicationTable({ rows: applicationState.results });
+    } catch (error) {
+      console.error("프로그램 신청 목록 조회 실패", error);
+      renderApplicationTable({
+        rows: [],
+        emptyMessage: "신청 목록을 불러오지 못했습니다.",
+      });
+    } finally {
+      applicationState.loading = false;
+    }
+  }
+
+  async function updateProgramStatus(programId, nextStatus) {
+    if (!programId || !nextStatus) return false;
+    try {
+      const response = await fetch(`${API_BASE}/api/programs/${encodeURIComponent(programId)}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "상태 변경에 실패했습니다.");
+      }
+      return true;
+    } catch (error) {
+      console.error(error);
+      alert(error.message || "상태 변경 중 오류가 발생했습니다.");
+      return false;
     }
   }
 
@@ -783,6 +923,40 @@ document.addEventListener("DOMContentLoaded", () => {
   companyForm?.addEventListener("submit", handleCompanySubmit);
   companyForm?.addEventListener("reset", handleCompanyReset);
 
+  applicationRefreshButton?.addEventListener("click", (event) => {
+    event.preventDefault();
+    fetchApplications();
+  });
+
+  applicationTableBody?.addEventListener("click", (event) => {
+    const approveButton = event.target.closest("[data-action='approve-application']");
+    const rejectButton = event.target.closest("[data-action='reject-application']");
+
+    if (approveButton) {
+      event.preventDefault();
+      const programId = approveButton.dataset.programId;
+      updateProgramStatus(programId, "PLANNED").then((ok) => {
+        if (ok) {
+          alert("프로그램을 승인했습니다. 상태가 '계획'으로 변경됩니다.");
+          fetchApplications();
+        }
+      });
+      return;
+    }
+
+    if (rejectButton) {
+      event.preventDefault();
+      const programId = rejectButton.dataset.programId;
+      updateProgramStatus(programId, "REJECTED").then((ok) => {
+        if (ok) {
+          alert("프로그램을 반려했습니다.");
+          fetchApplications();
+        }
+      });
+      return;
+    }
+  });
+
   donorTableBody?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-action='show-donations']");
     if (!button) return;
@@ -850,8 +1024,17 @@ document.addEventListener("DOMContentLoaded", () => {
   (async () => {
     companyState.loading = true;
     renderCompanyState({ loading: true });
-    await fetchCompanies();
+
+    try {
+      await fetchCompanies();
+    } catch (error) {
+      console.error(error);
+    }
+
     companyState.loading = false;
     renderCompanyState();
+
+    // 회사 목록 로드 실패 여부와 관계없이 신청 목록은 시도
+    await fetchApplications();
   })();
 });

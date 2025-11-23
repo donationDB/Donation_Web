@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>희망나눔 – 프로그램 신청 현황</title>
+    <link rel="stylesheet" href="../../core/components/components.css" />
+    <link rel="stylesheet" href="../css/program_apply.css" />
+  </head>
+  <body class="auth-body page-program-apply">
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="logo" href="homepage.html" aria-label="희망나눔 로고">
+          <span class="logo-icon" aria-hidden="true">❤</span>
+          <span class="logo-text">희망나눔</span>
+        </a>
+        <div class="header-copy">
+          <strong>프로그램 신청 현황</strong>
+          <span>기업 계정으로 제출한 프로그램 목록입니다.</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="auth-main">
+      <section class="auth-intro">
+        <div class="container">
+          <h1>프로그램 신청 현황</h1>
+          <p>승인 상태와 기본 정보를 한눈에 확인하세요.</p>
+        </div>
+      </section>
+
+      <section class="auth-section">
+        <div class="container login-layout">
+          <article class="auth-card login-card" aria-labelledby="program-apply-status-title">
+            <h2 id="program-apply-status-title">신청 목록</h2>
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>프로그램명</th>
+                    <th>상태</th>
+                    <th>시작</th>
+                    <th>마감</th>
+                    <th>목표금액</th>
+                  </tr>
+                </thead>
+                <tbody data-role="program-status-body">
+                  <tr>
+                    <td colspan="6">데이터를 불러오는 중입니다...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="cta-actions">
+              <a class="btn btn-secondary" href="program_apply.html">새 프로그램 신청</a>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-bottom">
+        <small>&copy; 2024 희망나눔. 모든 권리 보유.</small>
+      </div>
+    </footer>
+
+    <script src="../javascript/session.js"></script>
+    <script src="../javascript/program_apply_status.js"></script>
+  </body>
+</html>

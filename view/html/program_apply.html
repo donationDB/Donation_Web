@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>희망나눔 – 프로그램 신청</title>
+    <link rel="stylesheet" href="../../core/components/components.css" />
+    <link rel="stylesheet" href="../css/program_apply.css" />
+  </head>
+  <body class="auth-body page-program-apply">
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="logo" href="homepage.html" aria-label="희망나눔 로고">
+          <span class="logo-icon" aria-hidden="true">❤</span>
+          <span class="logo-text">희망나눔</span>
+        </a>
+        <div class="header-copy">
+          <strong>파트너 프로그램 신청</strong>
+          <span>기업 계정으로 로그인한 상태에서 관리자에게 검토를 요청하세요.</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="auth-main">
+      <section class="auth-intro">
+        <div class="container">
+          <h1>프로그램 신청</h1>
+          <p>프로그램 정보가 관리자에게 전달되어 승인 후 게시됩니다.</p>
+        </div>
+      </section>
+
+      <section class="auth-section">
+        <div class="container login-layout">
+          <article class="auth-card login-card" aria-labelledby="program-apply-title">
+            <h2 id="program-apply-title">프로그램 정보 입력</h2>
+            <form>
+              <div class="form-group inline-group">
+                <label for="program-title">프로그램 이름</label>
+                <div class="inline-control">
+                  <input
+                    type="text"
+                    id="program-title"
+                    name="programTitle"
+                    placeholder="예) 따뜻한 겨울나기 캠페인"
+                    required
+                  />
+                  <button type="button" class="btn btn-secondary" id="check-duplicate">중복 확인</button>
+                </div>
+                <p class="helper-text" id="duplicate-result" aria-live="polite"></p>
+              </div>
+
+              <div class="form-group">
+                <label for="program-category">카테고리</label>
+                <select id="program-category" name="programCategory" required>
+                  <option value="">카테고리를 선택하세요</option>
+                </select>
+              </div>
+
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="start-date">시작 날짜</label>
+                  <input type="date" id="start-date" name="startDate" required />
+                </div>
+                <div class="form-group">
+                  <label for="end-date">마감 날짜</label>
+                  <input type="date" id="end-date" name="endDate" required />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="program-place">장소/진행 위치</label>
+                <input
+                  type="text"
+                  id="program-place"
+                  name="programPlace"
+                  placeholder="예) 서울특별시 중구 사랑로 123"
+                />
+              </div>
+
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="account-number">모금 계좌번호</label>
+                  <input type="text" id="account-number" name="accountNumber" placeholder="000-0000-000000" />
+                </div>
+                <div class="form-group">
+                  <label for="goal-amount">목표 금액(원)</label>
+                  <input type="number" id="goal-amount" name="goalAmount" min="0" step="1000" placeholder="1000000" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="program-description">프로그램 설명</label>
+                <textarea
+                  id="program-description"
+                  name="programDescription"
+                  rows="4"
+                  placeholder="프로그램 목적, 진행 방식, 필요 예산 등을 자세히 작성해주세요."
+                  required
+                ></textarea>
+              </div>
+
+              <button type="submit" class="btn btn-primary full-width">프로그램 신청하기</button>
+            </form>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-bottom">
+        <small>&copy; 2024 희망나눔. 모든 권리 보유.</small>
+      </div>
+    </footer>
+
+    <script src="../javascript/session.js"></script>
+    <script src="../javascript/program_apply.js"></script>
+  </body>
+</html>
