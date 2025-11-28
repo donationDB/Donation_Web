@@ -16,10 +16,9 @@
         </a>
         <nav class="nav">
           <ul>
-            <li><a href="monthly_donation.html">매달기부</a></li>
+            <li><a class="nav-link--cta" href="monthly_donation.html">매달기부</a></li>
             <li><a href="#about">소개</a></li>
             <li><a href="#causes">기부 분야</a></li>
-            <li><a href="#impact">임팩트</a></li>
             <li><a href="#stories">스토리</a></li>
             <li><a href="#cta">참여하기</a></li>
           </ul>
@@ -49,13 +48,25 @@
               <a class="btn btn-link" href="#stories">스토리 보기</a>
             </div>
           </div>
-          <div
-            class="hero-illustration"
-            role="img"
-            aria-label="기부와 나눔을 표현한 일러스트"
-          >
-            <div class="circle"></div>
-            <div class="dots"></div>
+          <div class="hero-illustration" aria-hidden="true">
+            <img
+              class="hero-image primary"
+              src="/assets/images/1.jpg"
+              alt="기부가 필요한 첫 번째 장면"
+              loading="lazy"
+            />
+            <img
+              class="hero-image secondary"
+              src="/assets/images/2.jpg"
+              alt="기부가 필요한 두 번째 장면"
+              loading="lazy"
+            />
+            <img
+              class="hero-image tertiary"
+              src="/assets/images/3.jpeg"
+              alt="기부가 필요한 세 번째 장면"
+              loading="lazy"
+            />
           </div>
         </div>
       </section>
@@ -78,6 +89,27 @@
             <span class="stat-value">98%</span>
             <span class="stat-label">만족한 기부자</span>
           </div>
+        </div>
+      </section>
+
+      <section class="recommend-section" id="recommendations">
+        <div class="container">
+          <div class="recommend-section__header">
+            <div>
+              <p class="eyebrow">맞춤 추천</p>
+              <h2>내 취향에 맞는 기부 프로그램</h2>
+              <p class="survey-subtitle">설문 결과를 기반으로 추천한 프로그램입니다.</p>
+            </div>
+            <div class="recommend-section__actions">
+              <button class="btn btn-secondary" type="button" data-action="refresh-recommend">
+                추천 새로고침
+              </button>
+            </div>
+          </div>
+          <div class="recommend-inline" data-role="recommend-inline-list"></div>
+          <p class="donation-error" data-role="recommend-inline-empty" hidden>
+            아직 추천 결과가 없습니다. 설문을 완료하거나 새로고침해 주세요.
+          </p>
         </div>
       </section>
 
@@ -133,27 +165,7 @@
       </div>
     </section>
 
-    <section class="recommend-section" id="recommendations">
-      <div class="container">
-        <div class="recommend-section__header">
-          <div>
-            <p class="eyebrow">맞춤 추천</p>
-            <h2>내 취향에 맞는 기부 프로그램</h2>
-            <p class="survey-subtitle">설문 결과를 기반으로 추천한 프로그램입니다.</p>
-          </div>
-          <div class="recommend-section__actions">
-            <button class="btn btn-secondary" type="button" data-action="refresh-recommend">
-              추천 새로고침
-            </button>
-          </div>
-        </div>
-        <div class="recommend-inline" data-role="recommend-inline-list"></div>
-        <p class="donation-error" data-role="recommend-inline-empty" hidden>
-          아직 추천 결과가 없습니다. 설문을 완료하거나 새로고침해 주세요.
-        </p>
-      </div>
-    </section>
-
+      <section class="recommend-section" id="recommendations">
     <section class="cta" id="cta">
       <div class="container cta-inner">
         <div class="cta-copy">
@@ -423,7 +435,7 @@
               <textarea
                 class="survey-textarea"
                 name="currentFocusKeyword"
-                placeholder="예: 부산 어르신 난방비, 겨울 유기동물 사료"
+                placeholder="예: 동물, 환경, 어르신, 재난, 교육 등"
                 rows="3"
               ></textarea>
             </div>

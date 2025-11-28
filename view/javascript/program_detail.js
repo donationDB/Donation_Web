@@ -1,5 +1,14 @@
 (function () {
-  const API_BASE = "http://localhost:8080/api";
+  // API 엔드포인트: window.API_BASE 우선, 없으면 현재 origin을 기반으로 결정
+  const API_BASE = (() => {
+    const custom = window.API_BASE && window.API_BASE.replace(/\/$/, "");
+    if (custom) return custom;
+    const origin = window.location.origin.replace(/\/$/, "");
+    if (!origin.includes(":8080")) {
+      return "http://127.0.0.1:8080/api";
+    }
+    return `${origin}/api`;
+  })();
 
   function getParams() {
     const params = new URLSearchParams(window.location.search);
@@ -60,18 +69,29 @@
       return;
     }
 
-    try {
-      const response = await fetch(`${API_BASE}/programs/${encodeURIComponent(programId)}`);
-      if (!response.ok) {
-        throw new Error("프로그램을 찾을 수 없습니다.");
+    const fetchDetail = async () => {
+      const urls = [
+        `${API_BASE}/programs/${encodeURIComponent(programId)}`,
+        `${API_BASE}/donor/programs/${encodeURIComponent(programId)}`,
+      ];
+      let lastError;
+      for (const url of urls) {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) {
+            lastError = new Error(`요청 실패: ${res.status}`);
+            continue;
+          }
+          return await res.json();
+        } catch (err) {
+          lastError = err;
+        }
       }
+      throw lastError || new Error("프로그램을 찾을 수 없습니다.");
+    };
 
-      const program = await response.json();
-      const normalizedStatus = (program.status || program.status_code || "").toLowerCase();
-      if (normalizedStatus !== "running") {
-        empty.removeAttribute("hidden");
-        return;
-      }
+    try {
+      const program = await fetchDetail();
 
       const title = detail.querySelector('[data-field="title"]');
       const category = detail.querySelector('[data-field="category"]');
@@ -92,7 +112,10 @@
         const summaryText = program.summary || program.goal_description || program.description || "";
         summary.textContent = summaryText.trim() || "진행 중 프로그램을 확인하고 따뜻한 마음을 나눠보세요.";
       }
-      if (status) status.textContent = program.status_label || "진행 중";
+      if (status) {
+        const label = program.status_label || program.status || program.status_code || "진행 중";
+        status.textContent = label;
+      }
       if (period) period.textContent = formatPeriod(program.start_date, program.end_date);
       if (locationField) locationField.textContent = program.location || program.place || "장소 미정";
       if (goal) goal.textContent = formatCurrency(program.goal_amount);

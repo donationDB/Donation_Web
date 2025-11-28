@@ -257,6 +257,13 @@ document.addEventListener("DOMContentLoaded", () => {
       badge.textContent = program.category_name || "카테고리 미정";
       footer.appendChild(badge);
 
+      const detailButton = document.createElement("button");
+      detailButton.type = "button";
+      detailButton.className = "btn btn-secondary btn-ghost";
+      detailButton.dataset.action = "view-detail";
+      detailButton.textContent = "상세보기";
+      footer.appendChild(detailButton);
+
       const actionButton = document.createElement("button");
       actionButton.type = "button";
       actionButton.className = "btn btn-primary";
@@ -413,12 +420,33 @@ document.addEventListener("DOMContentLoaded", () => {
     formEl.amount.focus();
   }
 
+  function goToProgramDetail(programCard) {
+    const programId = programCard?.dataset?.programId;
+    if (!programId) return;
+    const search = new URLSearchParams({ programId }).toString();
+    window.location.href = `program_detail.html?${search}`;
+  }
+
   listEl?.addEventListener("click", (event) => {
+    const detailButton = event.target.closest("[data-action='view-detail']");
+    if (detailButton) {
+      const card = detailButton.closest(".program-card");
+      if (card) goToProgramDetail(card);
+      return;
+    }
+
     const button = event.target.closest("[data-action='select-program']");
     if (!button) return;
     const card = button.closest(".program-card");
     if (!card) return;
     openPanel(card);
+  });
+
+  listEl?.addEventListener("click", (event) => {
+    const card = event.target.closest(".program-card");
+    if (!card || !listEl.contains(card)) return;
+    if (event.target.closest("button")) return; // 버튼 클릭은 이미 별도 처리
+    goToProgramDetail(card);
   });
 
   categoryListEl?.addEventListener("click", (event) => {

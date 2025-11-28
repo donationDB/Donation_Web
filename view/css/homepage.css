@@ -26,32 +26,77 @@
     flex-wrap: wrap;
 }
 
+.site-header .nav a {
+    color: var(--color-text);
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+.site-header .nav a:hover,
+.site-header .nav a:focus-visible {
+    color: var(--color-secondary);
+}
+
+.site-header .nav a.nav-link--cta {
+    color: var(--color-primary);
+    font-weight: 700;
+}
+
+.site-header .nav a.nav-link--cta:hover,
+.site-header .nav a.nav-link--cta:focus-visible {
+    color: var(--color-primary);
+}
+
 .page-home .hero-illustration {
     position: relative;
-    background: linear-gradient(135deg, rgba(240, 84, 84, 0.15), rgba(37, 99, 235, 0.1));
     border-radius: var(--radius-lg);
     height: clamp(260px, 30vw, 320px);
     overflow: hidden;
 }
 
-.page-home .hero-illustration .circle {
+.page-home .hero-illustration .hero-image {
     position: absolute;
-    width: 190px;
-    height: 190px;
-    border-radius: 50%;
-    background: rgba(240, 84, 84, 0.12);
-    top: 18%;
-    left: 15%;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
+    transition: opacity 0.8s ease-in-out;
 }
 
-.page-home .hero-illustration .dots {
-    position: absolute;
-    width: 220px;
-    height: 220px;
-    border-radius: 50%;
-    border: 2px dashed rgba(37, 99, 235, 0.25);
-    bottom: -40px;
-    right: 12%;
+.page-home .hero-illustration .hero-image.primary {
+    opacity: 1;
+    animation: hero-cycle-primary 9s linear infinite;
+    z-index: 1;
+}
+
+.page-home .hero-illustration .hero-image.secondary {
+    opacity: 0;
+    animation: hero-cycle-secondary 9s linear infinite;
+    z-index: 2;
+}
+
+.page-home .hero-illustration .hero-image.tertiary {
+    opacity: 0;
+    animation: hero-cycle-tertiary 9s linear infinite;
+    z-index: 3;
+}
+
+@keyframes hero-cycle-primary {
+    0%, 30% { opacity: 1; }
+    35%, 100% { opacity: 0; }
+}
+
+@keyframes hero-cycle-secondary {
+    0%, 33% { opacity: 0; }
+    38%, 63% { opacity: 1; }
+    68%, 100% { opacity: 0; }
+}
+
+@keyframes hero-cycle-tertiary {
+    0%, 66% { opacity: 0; }
+    71%, 96% { opacity: 1; }
+    100% { opacity: 0; }
 }
 
 .page-home .stats {
