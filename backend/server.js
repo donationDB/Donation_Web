@@ -154,6 +154,7 @@ function normalizeProgram(program = {}) {
   const startDateValue = program.start_date ?? program.start_at ?? program.startDate ?? null;
   const endDateValue = program.end_date ?? program.end_at ?? program.endDate ?? null;
   const durationMonths = diffInMonths(startDateValue, endDateValue);
+  const donorCount = Number(program.donor_count ?? program.donorCount ?? program.supporter_count ?? 0);
   const explicitMonthly =
     parseBooleanFlag(
       program.monthly ??
@@ -182,6 +183,8 @@ function normalizeProgram(program = {}) {
     start_date: startDateValue,
     end_date: endDateValue,
     total_amount: program.total_amount ?? program.totalAmount ?? 0,
+    donor_count: donorCount,
+    donorCount,
     goal_amount: program.goal_amount ?? program.goalAmount ?? null,
     description: program.description ?? "",
     goal_description: program.goal_description ?? program.goal_text ?? program.purpose ?? program.description ?? "",

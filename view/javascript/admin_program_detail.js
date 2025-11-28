@@ -33,23 +33,28 @@ document.addEventListener("DOMContentLoaded", () => {
   const rejectButton = document.querySelector("[data-action='reject']");
 
   const statusLabels = {
+    pending: "신청대기",
     planned: "계획",
     running: "진행 중",
     finished: "종료",
+    rejected: "반려",
   };
 
   const statusFallback = {
     PLANNED: "planned",
     RUNNING: "running",
     FINISHED: "finished",
-    pending: "planned",
+    PENDING: "pending",
+    pending: "pending",
     approved: "running",
     completed: "finished",
-    "승인 전": "planned",
+    "승인 전": "pending",
     계획: "planned",
     진행중: "running",
     "진행 중": "running",
     종료: "finished",
+    신청대기: "pending",
+    반려: "rejected",
   };
 
   const state = {
@@ -76,10 +81,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateButtons(status) {
-    const canApprove = status === "planned";
-    const canRevert = status === "running";
+    const canApprove = status === "planned" || status === "pending";
+    const canReject = status === "planned" || status === "pending";
     approveButton.disabled = !canApprove;
-    rejectButton.disabled = !canRevert;
+    rejectButton.disabled = !canReject;
   }
 
   function renderProgram(program) {
@@ -159,7 +164,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const message =
       nextStatus === "running"
         ? `${programName} 프로그램을 진행 상태로 전환하시겠습니까?`
-        : `${programName} 프로그램을 계획 상태로 되돌리시겠습니까?`;
+        : `${programName} 프로그램을 반려하시겠습니까?`;
     if (!window.confirm(message)) return;
 
     try {
@@ -187,7 +192,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   approveButton.addEventListener("click", () => updateStatus("running"));
-  rejectButton.addEventListener("click", () => updateStatus("planned"));
+  rejectButton.addEventListener("click", () => updateStatus("rejected"));
 
   fetchProgram();
 });

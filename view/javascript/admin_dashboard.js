@@ -431,13 +431,11 @@ document.addEventListener("DOMContentLoaded", () => {
           const programTitle = item?.program?.program_name ?? item?.program?.title ?? "프로그램";
           const donatedAt = formatDate(item?.donated_at);
           const amountText = formatCurrency(item?.amount);
-          const statusLabel = item?.program?.status_label ?? item?.program?.status ?? "";
           return `
             <div class="donor-history__item">
               <div class="donor-history__title">${programTitle}</div>
               <div class="donor-history__meta">후원일: ${donatedAt}</div>
               <div class="donor-history__meta">${amountText}</div>
-              <span class="status-badge donor-history__badge">${statusLabel}</span>
             </div>
           `;
         })

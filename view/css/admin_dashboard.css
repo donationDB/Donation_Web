@@ -779,7 +779,7 @@
 
 .donor-history__item {
   display: grid;
-  grid-template-columns: minmax(240px, 1fr) auto auto auto;
+  grid-template-columns: minmax(240px, 1fr) auto auto;
   gap: 0.6rem;
   padding: 0.75rem 1rem;
   border: 1px solid rgba(226, 232, 240, 0.9);
@@ -799,11 +799,6 @@
 .donor-history__meta {
   color: #4a4f63;
   font-size: 0.95rem;
-  white-space: nowrap;
-}
-
-.donor-history__badge {
-  justify-self: end;
   white-space: nowrap;
 }
 

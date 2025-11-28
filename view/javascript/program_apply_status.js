@@ -70,6 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const goal = formatAmount(goalValue);
         const current = formatAmount(currentValue);
         const percent = goalValue > 0 ? Math.min(999, Math.round((currentValue / goalValue) * 100)) : 0;
+        const donorLabel = Number.isFinite(donorCount) ? `${donorCount}명` : "-";
 
         const titleCol = document.createElement("div");
         titleCol.className = "status-row__title";
@@ -86,16 +87,19 @@ document.addEventListener("DOMContentLoaded", () => {
         const statusCol = document.createElement("div");
         statusCol.innerHTML = `<span class="badge badge--${status.toLowerCase()}">${statusLabel}</span>`;
 
+        const donorCol = document.createElement("div");
+        donorCol.className = "status-row__meta";
+        donorCol.innerHTML = `<strong>후원자 수</strong><span>${donorLabel}</span>`;
+
         row.append(titleCol, dateCol, goalCol);
 
         if (status !== "PENDING") {
           const amountCol = document.createElement("div");
           amountCol.className = "status-row__meta";
           amountCol.innerHTML = `<strong>현재 모금</strong><span>${current} (${percent}%)</span>`;
-          const donorCol = document.createElement("div");
-          donorCol.className = "status-row__meta";
-          donorCol.innerHTML = `<strong>후원자 수</strong><span>${donorCount}명</span>`;
           row.append(amountCol, donorCol);
+        } else {
+          row.append(donorCol);
         }
 
         row.append(statusCol);
