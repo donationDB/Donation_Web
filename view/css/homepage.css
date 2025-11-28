@@ -326,6 +326,30 @@
     padding: 4rem 0 5rem;
 }
 
+.recommend-section {
+    padding: 2.5rem 0;
+    background: #f7f9fd;
+}
+
+.recommend-section__header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.recommend-section__actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.recommend-inline {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0.9rem;
+}
+
 .page-home .cta-inner {
     background: linear-gradient(120deg, rgba(37, 99, 235, 0.08), rgba(240, 84, 84, 0.12));
     border-radius: var(--radius-lg);
@@ -351,11 +375,300 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .page-home .cta-inner {
-        flex-direction: column;
-        text-align: center;
+.page-home .cta-inner {
+    flex-direction: column;
+    text-align: center;
+}
+
+}
+
+/* Survey modal (홈/로그인 공유) */
+.survey-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: none;
+}
+
+.survey-modal.is-open {
+    display: block;
+}
+
+.survey-modal[aria-hidden="true"],
+.recommend-modal[aria-hidden="true"] {
+    display: none;
+}
+
+.survey-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+}
+
+.survey-modal__dialog {
+    position: relative;
+    z-index: 1;
+    max-width: 980px;
+    margin: 4vh auto;
+    background: #fff;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 24px 64px rgba(15, 23, 42, 0.24);
+    display: flex;
+    flex-direction: column;
+    max-height: 92vh;
+}
+
+.survey-modal__header,
+.survey-modal__footer {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.survey-modal__footer {
+    border-top: 1px solid rgba(226, 232, 240, 0.9);
+    border-bottom: 0;
+    align-items: center;
+}
+
+.survey-modal__body {
+    padding: 1.25rem 2rem 1.5rem;
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 1.5rem;
+    overflow-y: auto;
+}
+
+.survey-close {
+    border: none;
+    background: transparent;
+    font-size: 2rem;
+    cursor: pointer;
+    color: var(--color-text-light);
+    line-height: 1;
+}
+
+.survey-header__copy h3 {
+    margin: 0;
+    font-size: 1.4rem;
+    color: var(--color-text);
+}
+
+.survey-subtitle {
+    margin: 0.25rem 0 0;
+    color: var(--color-text-light);
+    line-height: 1.5;
+}
+
+.survey-intro {
+    background: linear-gradient(145deg, rgba(37, 99, 235, 0.1), rgba(240, 84, 84, 0.08));
+    border: 1px solid rgba(37, 99, 235, 0.15);
+    border-radius: 16px;
+    padding: 1.25rem 1.1rem;
+    display: grid;
+    gap: 0.65rem;
+    align-self: flex-start;
+}
+
+.survey-intro h4 {
+    margin: 0;
+    color: #0f172a;
+}
+
+.survey-intro p {
+    margin: 0;
+    color: #1f2933;
+}
+
+.survey-points {
+    margin: 0;
+    padding-left: 1.1rem;
+    display: grid;
+    gap: 0.35rem;
+    color: #1f2933;
+    font-weight: 600;
+}
+
+.survey-form {
+    display: grid;
+    gap: 1rem;
+}
+
+.survey-question {
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 14px;
+    padding: 1rem 1.1rem 1rem;
+    display: grid;
+    gap: 0.75rem;
+    background: #fafbff;
+}
+
+.survey-question__head {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.survey-question__head h5 {
+    margin: 0;
+}
+
+.pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    background: #1f2c68;
+    color: #fff;
+}
+
+.pill--soft {
+    background: rgba(37, 99, 235, 0.14);
+    color: #1f2c68;
+}
+
+.survey-options {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.survey-options--inline {
+    gap: 0.65rem;
+}
+
+.chip-input {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.85rem;
+    border-radius: 12px;
+    border: 1px solid rgba(31, 44, 104, 0.18);
+    background: #fff;
+    cursor: pointer;
+    font-weight: 700;
+    color: #1f2c68;
+    transition: all 0.2s ease;
+}
+
+.chip-input input {
+    accent-color: var(--color-secondary);
+}
+
+.chip-input:hover {
+    border-color: var(--color-secondary);
+    box-shadow: 0 10px 20px rgba(31, 44, 104, 0.12);
+}
+
+.chip-input input:checked + span,
+.chip-input input:focus-visible + span {
+    color: var(--color-secondary);
+}
+
+.chip-input input:checked ~ span {
+    font-weight: 800;
+}
+
+.radio-tile {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 0.9rem;
+    border-radius: 12px;
+    border: 1px solid rgba(31, 44, 104, 0.18);
+    background: #fff;
+    cursor: pointer;
+    font-weight: 700;
+    transition: all 0.2s ease;
+}
+
+.radio-tile input {
+    accent-color: var(--color-primary);
+}
+
+.radio-tile:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 10px 20px rgba(240, 84, 84, 0.12);
+}
+
+.radio-tile input:checked + span {
+    color: var(--color-primary);
+    font-weight: 800;
+}
+
+.survey-textarea {
+    width: 100%;
+    resize: vertical;
+    border-radius: 12px;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    padding: 0.75rem 0.85rem;
+    font-family: inherit;
+    background: #fff;
+}
+
+.survey-textarea:focus-visible {
+    outline: 2px solid var(--color-secondary);
+    outline-offset: 2px;
+}
+
+.survey-modal__footer .survey-footer__note {
+    color: var(--color-text-light);
+    font-size: 0.95rem;
+}
+
+.survey-actions {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+}
+
+.btn-ghost {
+    background: #fff;
+    border-color: rgba(31, 44, 104, 0.2);
+    color: #1f2c68;
+}
+
+@media (max-width: 960px) {
+    .survey-modal__body {
+        grid-template-columns: 1fr;
     }
 
+    .survey-intro {
+        order: -1;
+    }
+}
+
+@media (max-width: 640px) {
+    .survey-modal__dialog {
+        margin: 2vh auto;
+        max-width: calc(100% - 1.5rem);
+    }
+
+    .survey-modal__body {
+        padding: 1rem 1.25rem 1.2rem;
+    }
+
+    .survey-modal__header,
+    .survey-modal__footer {
+        padding: 1rem 1.25rem;
+    }
+
+    .survey-actions {
+        width: 100%;
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    .survey-actions .btn {
+        width: 100%;
+    }
 }
 
 @media (max-width: 640px) {
@@ -379,4 +692,88 @@
     100% {
         background-position: 200% 0;
     }
+}
+
+.recommend-body {
+    padding: 1.25rem 2rem 1.5rem;
+}
+
+.recommend-loading {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 32px 24px;
+    text-align: center;
+    color: #0f172a;
+}
+
+.recommend-loading.is-active {
+    display: flex;
+}
+
+.recommend-loading .spinner {
+    width: 56px;
+    height: 56px;
+    border: 6px solid rgba(15, 23, 42, 0.12);
+    border-top-color: #2563eb;
+    border-radius: 50%;
+    animation: recommend-spin 0.9s linear infinite;
+}
+
+@keyframes recommend-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.recommend-list {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.recommend-card {
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 14px;
+    padding: 1rem 1.1rem;
+    background: #fafbff;
+    display: grid;
+    gap: 0.35rem;
+}
+
+.recommend-card h4 {
+    margin: 0;
+}
+
+.recommend-card__meta {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    font-size: 0.95rem;
+    color: var(--color-text-light);
+}
+
+.recommend-card__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    border: 1px solid rgba(31, 44, 104, 0.18);
+    background: rgba(31, 44, 104, 0.05);
+}
+
+.recommend-card__snippet {
+    margin: 0;
+    color: var(--color-text);
+}
+
+.recommend-card__actions {
+    margin-top: 0.6rem;
+}
+
+.donation-error {
+    color: #c5223f;
+    font-weight: 700;
 }

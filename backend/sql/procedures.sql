@@ -15,6 +15,7 @@ BEGIN
     hc.address,
     p.start_date,
     p.end_date,
+    p.monthly,
     p.goal_amount,
     COALESCE(SUM(CASE WHEN d.status = 'PAID' THEN d.amount ELSE 0 END), 0) AS total_amount,
     p.description,
@@ -26,7 +27,7 @@ BEGIN
   GROUP BY
     p.program_id, p.title, p.status, p.category_id, c.name,
     p.host_company_id, hc.company_name, hc.company_phone, hc.address,
-    p.start_date, p.end_date, p.goal_amount, p.description, p.place
+    p.start_date, p.end_date, p.monthly, p.goal_amount, p.description, p.place
   ORDER BY p.end_date ASC, p.program_id ASC;
 END $$
 
@@ -58,6 +59,7 @@ BEGIN
     hc.address,
     p.start_date,
     p.end_date,
+    p.monthly,
     p.goal_amount,
     COALESCE(SUM(CASE WHEN d.status = 'PAID' THEN d.amount ELSE 0 END), 0) AS total_amount,
     p.description,
@@ -77,7 +79,7 @@ BEGIN
   GROUP BY
     p.program_id, p.title, p.status, p.category_id, c.name,
     p.host_company_id, hc.company_name, hc.company_phone, hc.address,
-    p.start_date, p.end_date, p.goal_amount, p.description, p.place
+    p.start_date, p.end_date, p.monthly, p.goal_amount, p.description, p.place
   ORDER BY
     CASE WHEN p_sort = 'deadline_desc' THEN p.end_date END DESC,
     CASE WHEN p_sort = 'deadline_asc' THEN p.end_date END ASC,

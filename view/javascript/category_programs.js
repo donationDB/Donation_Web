@@ -330,6 +330,14 @@
   async function loadPrograms(categoryId) {
     if (!elements.list || !elements.count) return;
 
+    if (!categoryId) {
+      elements.list.innerHTML = "";
+      elements.count.textContent = "카테고리가 지정되지 않았습니다.";
+      toggleEmptyState(true);
+      hideSkeleton();
+      return;
+    }
+
     state.category = categoryId;
     state.allPrograms = [];
     state.rendered = 0;
@@ -349,9 +357,10 @@
       }
 
       const programs = await response.json();
-      const runningPrograms = Array.isArray(programs)
-        ? programs.filter((program) => (program.status || "").toLowerCase() === "running")
-        : [];
+      const normalizedPrograms = Array.isArray(programs) ? programs : [];
+      const runningPrograms = normalizedPrograms.filter(
+        (program) => (program.status || "").toLowerCase() === "running"
+      );
 
       if (!state.categoryName && runningPrograms[0]?.category_name) {
         state.categoryName = runningPrograms[0].category_name;
@@ -391,6 +400,14 @@
     const params = getParams();
     applyCategoryContext(params);
     ensureSkeletons();
+
+    if (!params.category) {
+      if (elements.count) elements.count.textContent = "카테고리가 선택되지 않았습니다.";
+      toggleEmptyState(true);
+      hideSkeleton();
+      return;
+    }
+
     await loadPrograms(params.category);
 
     elements.loadMore?.addEventListener("click", () => {

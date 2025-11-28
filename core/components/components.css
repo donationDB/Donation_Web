@@ -116,26 +116,35 @@ h3 {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0.75rem 1.5rem;
-    font-weight: 600;
-    border-radius: 999px;
-    border: none;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    gap: 0.4rem;
+    padding: 0.65rem 1.25rem;
+    min-height: 40px;
+    font-weight: 700;
+    border-radius: 12px;
+    border: 1px solid rgba(31, 44, 104, 0.18);
+    background: #ffffff;
+    color: #1f2c68;
+    box-shadow: none;
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
 }
 
 .btn:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 4px rgba(138, 99, 210, 0.2);
+    box-shadow: 0 0 0 3px rgba(40, 68, 163, 0.18);
 }
 
 .btn-primary {
-    color: #fff;
-    background-color: var(--color-primary);
-    box-shadow: var(--shadow-sm);
+    background: #ffffff;
+    color: #1f2c68;
+    border-color: rgba(31, 44, 104, 0.3);
+    box-shadow: none;
 }
 
 .btn-primary:hover {
-    background-color: var(--color-primary-dark);
+    background: #1f2c68;
+    color: #ffffff;
+    border-color: #1f2c68;
+    box-shadow: 0 8px 16px rgba(31, 44, 104, 0.16);
     transform: translateY(-1px);
 }
 
@@ -201,23 +210,46 @@ h3 {
 }
 
 .btn-secondary {
-    color: #fff;
-    background-color: var(--color-secondary);
+    background: #ffffff;
+    color: #1f2c68;
+    border-color: rgba(31, 44, 104, 0.18);
+    box-shadow: none;
 }
 
 .btn-secondary:hover {
-    background-color: var(--color-secondary-dark);
+    background: #f3f6ff;
+    color: #1f2c68;
+    border-color: #1f2c68;
+    box-shadow: 0 8px 16px rgba(31, 44, 104, 0.12);
     transform: translateY(-1px);
 }
 
 .btn-link {
-    color: var(--color-secondary);
-    padding: 0.75rem 1rem;
+    color: #1f2c68;
+    padding: 0.35rem 0.5rem;
+    background: transparent;
+    border: none;
+    font-weight: 700;
 }
 
 .btn-large {
-    padding: 1rem 2.5rem;
+    padding: 0.9rem 2.2rem;
     font-size: 1.05rem;
+}
+
+.btn:active,
+.btn-primary:active,
+.btn-secondary:active {
+    background: #ffffff;
+    color: #1f2c68;
+    border-color: rgba(31, 44, 104, 0.18);
+    box-shadow: none;
+    transform: translateY(0);
+}
+
+.btn-link:hover,
+.btn-link:focus {
+    text-decoration: underline;
 }
 
 .header-copy {

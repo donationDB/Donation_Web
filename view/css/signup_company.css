@@ -8,8 +8,17 @@
 }
 
 .page-signup-company .btn-secondary,
-.page-signup-company .btn-secondary:visited,
+.page-signup-company .btn-secondary:visited {
+  background: var(--color-secondary);
+  color: #fff;
+  border-color: var(--color-secondary);
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.15);
+}
+
 .page-signup-company .btn-secondary:hover,
 .page-signup-company .btn-secondary:focus-visible {
+  background: var(--color-secondary-dark);
+  border-color: var(--color-secondary-dark);
   color: #fff;
+  transform: translateY(-1px);
 }

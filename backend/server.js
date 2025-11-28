@@ -11,6 +11,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const RECOMMEND_API_URL = process.env.RECOMMEND_API_URL || "http://127.0.0.1:8000/recommend";
+
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   port: Number(process.env.DB_PORT || 3307),
@@ -25,68 +27,61 @@ function hashPassword(rawPassword = "") {
   return crypto.createHash("sha256").update(String(rawPassword)).digest("hex");
 }
 
-const SAMPLE_PROGRAMS = [
-  {
-    program_id: 1,
-    title: "따뜻한 겨울나기 캠페인",
-    category_id: 1,
-    status: "PLANNED",
-    start_date: "2024-12-01",
-    end_date: "2025-02-28",
-    goal_amount: 12500000,
-    host_company_id: 1,
-    place: "경산아동센터 위치",
-    description: "겨울철 어린이 온기 지원",
-  },
-  {
-    program_id: 2,
-    title: "초록 숲 가꾸기 프로젝트",
-    category_id: 2,
-    status: "RUNNING",
-    start_date: "2024-10-01",
-    end_date: "2025-03-31",
-    goal_amount: 7800000,
-    host_company_id: 2,
-    place: "수원 광교산 일대",
-    description: "미세먼지 저감을 위한 도시 숲 조성",
-  },
-  {
-    program_id: 3,
-    title: "농어촌 아동 교육 지원",
-    category_id: 3,
-    status: "PLANNED",
-    start_date: "2025-03-01",
-    end_date: "2025-12-31",
-    goal_amount: 0,
-    host_company_id: 1,
-    place: "전남 완도군 아동센터",
-    description: "디지털 격차 해소를 위한 기초 교육",
-  },
-  {
-    program_id: 4,
-    title: "반려동물 치료비 후원",
-    category_id: 4,
-    status: "FINISHED",
-    start_date: "2023-05-01",
-    end_date: "2023-10-31",
-    goal_amount: 18200000,
-    host_company_id: 3,
-    place: "서울 반려동물 지원센터",
-    description: "치료가 시급한 반려동물 치료비 지원",
-  },
-  {
-    program_id: 5,
-    title: "희망 헌혈 릴레이",
-    category_id: 5,
-    status: "PLANNED",
-    start_date: "2024-08-15",
-    end_date: "2024-11-30",
-    goal_amount: 0,
-    host_company_id: 4,
-    place: "부산 시민회관 앞 광장",
-    description: "수혈이 필요한 환자 지원을 위한 헌혈 캠페인",
-  },
-];
+function parseBooleanFlag(value, defaultValue = false) {
+  if (value === null || value === undefined || value === "") return defaultValue;
+  const normalized = value.toString().trim().toLowerCase();
+  return ["1", "true", "yes", "y", "on"].includes(normalized);
+}
+
+// 지역 값 정규화 (ENUM/길이 제약 회피용)
+const ALLOWED_REGIONS = new Set([
+  "서울",
+  "부산",
+  "대구",
+  "인천",
+  "광주",
+  "대전",
+  "울산",
+  "세종",
+  "경기",
+  "강원",
+  "충북",
+  "충남",
+  "전북",
+  "전남",
+  "경북",
+  "경남",
+  "제주",
+]);
+
+const REGION_ALIAS = {
+  충청: ["충북", "충남"],
+  전라: ["전북", "전남"],
+  경상: ["경북", "경남"],
+};
+
+function normalizeRegions(regions = []) {
+  const result = [];
+  const seen = new Set();
+  for (const raw of regions) {
+    const r = (raw || "").toString().trim();
+    if (!r) continue;
+    if (REGION_ALIAS[r]) {
+      for (const alias of REGION_ALIAS[r]) {
+        if (ALLOWED_REGIONS.has(alias) && !seen.has(alias)) {
+          seen.add(alias);
+          result.push(alias);
+        }
+      }
+      continue;
+    }
+    if (ALLOWED_REGIONS.has(r) && !seen.has(r)) {
+      seen.add(r);
+      result.push(r);
+    }
+  }
+  return result;
+}
 
 const PROGRAM_STATUS = {
   pending: { code: "pending", label: "신청대기", db: "PENDING" },
@@ -119,22 +114,6 @@ const STATUS_ALIAS_TO_CODE = {
   rejected: "rejected",
 };
 
-const PROGRAM_CATEGORY = {
-  children: { code: "children", label: "아동" },
-  environment: { code: "environment", label: "환경" },
-  education: { code: "education", label: "교육" },
-  animal: { code: "animal", label: "동물" },
-  health: { code: "health", label: "보건" },
-  others: { code: "others", label: "기타" },
-};
-
-const CATEGORY_LABEL_TO_CODE = Object.values(PROGRAM_CATEGORY).reduce((acc, item) => {
-  acc[item.label] = item.code;
-  return acc;
-}, {});
-
-let sampleCategoryState = [];
-
 function normalizeStatus(raw) {
   if (!raw) return PROGRAM_STATUS.planned;
 
@@ -160,29 +139,11 @@ function normalizeStatus(raw) {
   return { code: normalizedKey || "planned", label: rawString || PROGRAM_STATUS.planned.label };
 }
 
-function normalizeCategory(raw) {
-  if (!raw) return PROGRAM_CATEGORY.children;
-
-  const rawString = raw.toString().trim();
-  const normalizedKey = rawString.toLowerCase();
-
-  if (PROGRAM_CATEGORY[normalizedKey]) return PROGRAM_CATEGORY[normalizedKey];
-
-  const byLabel = CATEGORY_LABEL_TO_CODE[rawString];
-  if (byLabel && PROGRAM_CATEGORY[byLabel]) return PROGRAM_CATEGORY[byLabel];
-
-  return { code: normalizedKey || "others", label: rawString || "기타" };
-}
-
 function normalizeProgram(program = {}) {
   const statusInfo = normalizeStatus(program.status ?? program.status_name ?? program.status_label);
 
   const rawCategoryId = program.category_id ?? program.category ?? null;
   let categoryName = program.category_name ?? program.category_label ?? program.category ?? "";
-  if (!categoryName && rawCategoryId !== null && rawCategoryId !== undefined) {
-    const matched = sampleCategoryState.find((category) => Number(category.category_id) === Number(rawCategoryId));
-    if (matched) categoryName = matched.category_name;
-  }
 
   const hostCompanyId = program.host_company_id ?? program.company_id ?? program.provider_company_id ?? null;
 
@@ -190,6 +151,21 @@ function normalizeProgram(program = {}) {
     program.company_name ?? program.companyName ?? program.organization ?? program.host_company_name ?? "";
   const contactNumber =
     program.contact ?? program.company_phone ?? program.companyPhone ?? program.phone ?? program.host_company_phone ?? "";
+  const startDateValue = program.start_date ?? program.start_at ?? program.startDate ?? null;
+  const endDateValue = program.end_date ?? program.end_at ?? program.endDate ?? null;
+  const durationMonths = diffInMonths(startDateValue, endDateValue);
+  const explicitMonthly =
+    parseBooleanFlag(
+      program.monthly ??
+        program.monthly_flag ??
+        program.is_recurring ??
+        program.allow_monthly_donation ??
+        program.recurring ??
+        program.monthlyDonation
+    );
+  const fundingTypeRaw = (program.funding_type ?? "").toString().toUpperCase();
+  const isSubscription = fundingTypeRaw === "SUBSCRIPTION" || fundingTypeRaw === "BOTH";
+  const monthlyFlag = isSubscription || explicitMonthly;
 
   return {
     program_id: program.program_id ?? program.id ?? null,
@@ -199,8 +175,12 @@ function normalizeProgram(program = {}) {
     category_name: categoryName,
     status: statusInfo.code,
     status_label: statusInfo.label,
-    start_date: program.start_date ?? program.start_at ?? program.startDate ?? null,
-    end_date: program.end_date ?? program.end_at ?? program.endDate ?? null,
+    monthly: monthlyFlag,
+    monthly_flag: monthlyFlag ? 1 : 0,
+    funding_type: fundingTypeRaw || (monthlyFlag ? "SUBSCRIPTION" : "ONE_TIME"),
+    duration_months: durationMonths,
+    start_date: startDateValue,
+    end_date: endDateValue,
     total_amount: program.total_amount ?? program.totalAmount ?? 0,
     goal_amount: program.goal_amount ?? program.goalAmount ?? null,
     description: program.description ?? "",
@@ -214,57 +194,262 @@ function normalizeProgram(program = {}) {
   };
 }
 
-let sampleProgramState = SAMPLE_PROGRAMS.map((program) => normalizeProgram(program));
-let sampleDonationState = [];
-
-function recordSampleDonation(donation) {
-  if (!donation) return null;
-
-  const normalizedAmount = Number(donation.amount ?? donation.donation_amount ?? 0) || 0;
-  const programId = Number(donation.program_id ?? donation.programId ?? donation.program ?? 0) || null;
-
-  const storedDonation = {
-    donation_id: donation.donation_id ?? donation.id ?? `sample-${sampleDonationState.length + 1}`,
-    donor_id: donation.donor_id ?? donation.donorId ?? null,
-    program_id: programId,
-    amount: normalizedAmount,
-    message: donation.message ?? donation.memo ?? "",
-    created_at: donation.created_at ?? new Date().toISOString(),
-  };
-
-  sampleDonationState = [...sampleDonationState, storedDonation];
-
-  if (programId) {
-    const index = sampleProgramState.findIndex((program) => Number(program.program_id) === programId);
-    if (index !== -1) {
-      const program = sampleProgramState[index];
-      const nextTotal = Number(program.total_amount ?? 0) + normalizedAmount;
-      sampleProgramState[index] = {
-        ...program,
-        total_amount: nextTotal,
-        donation_count: Number(program.donation_count ?? 0) + 1,
-        updated_at: new Date().toISOString(),
-      };
-    }
-  }
-
-  return storedDonation;
-}
-
 function mapPrograms(programs) {
   if (!Array.isArray(programs)) return [];
   return programs.map((program) => normalizeProgram(program)).filter(Boolean);
 }
 
-const SAMPLE_CATEGORIES = [
-  { category_id: 1, name: "아동", description: "아동 복지 및 교육 지원" },
-  { category_id: 2, name: "환경", description: "환경 보호 및 지속 가능성" },
-  { category_id: 3, name: "교육", description: "교육 기회 확대" },
-  { category_id: 4, name: "동물", description: "동물 보호 및 복지" },
-  { category_id: 5, name: "보건", description: "건강 증진 및 의료 지원" },
-  { category_id: 6, name: "긴급 구호", description: "재난 및 위기 대응" },
-  { category_id: 7, name: "문화 예술", description: "문화 예술 발전" },
-];
+// 추천 서비스 프록시 (Node -> FastAPI RAG)
+function getFallbackRecommendations(payload = {}) {
+  const cats = payload.preferred_categories || ["추천 카테고리 없음"];
+  const regions = payload.preferred_regions || ["전국"];
+  const items = cats.map((cat, idx) => ({
+    program_id: idx + 1,
+    title: `${cat} 추천 프로그램`,
+    category: cat,
+    place: regions[Math.min(regions.length - 1, idx)] || "전국",
+    emergency: !!payload.prefer_emergency,
+    funding_type:
+      (payload.subscription_type || "").toUpperCase() === "RECURRING" ? "SUBSCRIPTION" : "ONE_TIME",
+    score: 0.5,
+    snippet: `임시 추천 · 지역: ${regions[0] || "전국"}`,
+  }));
+  return { items: items.slice(0, payload.limit || 10) };
+}
+
+async function saveSurveyPreferences({ donorId, categories = [], regions = [], subscriptionType, preferEmergency, focusKeyword }) {
+  if (!donorId) return;
+  const normalizedRegions = normalizeRegions(regions);
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    // 카테고리 ID 매핑 (이름 기준)
+    let categoryIds = [];
+    if (categories.length) {
+      const placeholders = categories.map(() => "?").join(",");
+      const [rows] = await conn.query(
+        `SELECT category_id FROM category WHERE name IN (${placeholders})`,
+        categories
+      );
+      categoryIds = rows.map((r) => r.category_id);
+    }
+
+    // 기존 선호 삭제/정리
+    if (categoryIds.length) {
+      await conn.query("DELETE FROM donor_preference WHERE donor_id = ? AND preferred_category_id NOT IN (?)", [
+        donorId,
+        categoryIds,
+      ]);
+    } else {
+      await conn.query("DELETE FROM donor_preference WHERE donor_id = ?", [donorId]);
+    }
+
+    // 선호 카테고리 upsert
+    const sub = String(subscriptionType || "ANY").toUpperCase();
+    const prefEmergency = preferEmergency ? 1 : 0;
+    for (const catId of categoryIds) {
+      await conn.query(
+        `INSERT INTO donor_preference (donor_id, preferred_category_id, preferred_subscription_type, pref_is_emergency, current_focus_keyword, updated_at)
+         VALUES (?, ?, ?, ?, ?, NOW())
+         ON DUPLICATE KEY UPDATE preferred_subscription_type=VALUES(preferred_subscription_type),
+                                 pref_is_emergency=VALUES(pref_is_emergency),
+                                 current_focus_keyword=VALUES(current_focus_keyword),
+                                 updated_at=VALUES(updated_at)`,
+        [donorId, catId, sub, prefEmergency, focusKeyword || null]
+      );
+    }
+
+    // 지역 선호 재저장
+    await conn.query("DELETE FROM donor_preferred_region WHERE donor_id = ?", [donorId]);
+    if (normalizedRegions.length) {
+      const values = normalizedRegions.map((r) => [donorId, r]);
+      await conn.query("INSERT INTO donor_preferred_region (donor_id, region) VALUES ?", [values]);
+    }
+
+    await conn.commit();
+  } catch (error) {
+    await conn.rollback();
+    console.error("설문 저장 실패", error);
+  } finally {
+    conn.release();
+  }
+}
+
+app.post("/api/recommendations", async (req, res) => {
+  const payload = req.body || {};
+  const donorId = payload.donor_id;
+
+  // 설문 DB 저장 (카테고리/지역/정기 여부 등)
+  try {
+    await saveSurveyPreferences({
+      donorId,
+      categories: payload.preferred_categories || [],
+      regions: payload.preferred_regions || [],
+      subscriptionType: payload.subscription_type,
+      preferEmergency: payload.prefer_emergency,
+      focusKeyword: payload.focus_keyword,
+    });
+  } catch (error) {
+    console.error("설문 DB 저장 중 오류:", error);
+  }
+
+  try {
+    const response = await fetch(RECOMMEND_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("추천 서비스 호출 실패:", errorText);
+      return res.status(200).json(getFallbackRecommendations(payload));
+    }
+
+    const data = await response.json().catch(() => null);
+    if (!data) {
+      console.error("추천 서비스 응답 파싱 실패");
+      return res.status(200).json(getFallbackRecommendations(payload));
+    }
+
+    return res.json(data);
+  } catch (error) {
+    console.error("추천 서비스 연동 오류:", error);
+    return res.status(200).json(getFallbackRecommendations(payload));
+  }
+});
+
+async function ensureSampleFinishedDonation() {
+  const donorId = 301;
+  const donorName = "신은수";
+  const donorEmail = "shin.eunsu301@example.com";
+  const donorPhone = "010-7301-0301";
+
+  const sampleCompanyName = "푸른나무재단";
+  const sampleProgramTitle = "도심 숲 복원 프로젝트";
+  const sampleCategoryName = "환경";
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // donor
+    const [donorRows] = await connection.query("SELECT donor_id FROM donor WHERE donor_id = ? LIMIT 1", [donorId]);
+    if (!donorRows.length) {
+      await connection.query(
+        "INSERT INTO donor (donor_id, name, email, phone, password, created_at) VALUES (?, ?, ?, ?, ?, NOW())",
+        [donorId, donorName, donorEmail, donorPhone, "donor301!"]
+      );
+    }
+
+    // category
+    let categoryId = null;
+    const [categoryRows] = await connection.query("SELECT category_id FROM category WHERE name = ? LIMIT 1", [
+      sampleCategoryName,
+    ]);
+    if (categoryRows.length) {
+      categoryId = categoryRows[0].category_id;
+    } else {
+      const [insertCategory] = await connection.query(
+        "INSERT INTO category (name, description) VALUES (?, ?)",
+        [sampleCategoryName, "환경 보호 및 기후 대응"]
+      );
+      categoryId = insertCategory.insertId;
+    }
+
+    // host company
+    let hostCompanyId = null;
+    const [companyRows] = await connection.query(
+      "SELECT host_company_id FROM program_host_company WHERE company_name = ? LIMIT 1",
+      [sampleCompanyName]
+    );
+    if (companyRows.length) {
+      hostCompanyId = companyRows[0].host_company_id;
+    } else {
+      const [insertCompany] = await connection.query(
+        "INSERT INTO program_host_company (company_name, address, company_phone, business_no, email, password_hash) VALUES (?, ?, ?, ?, ?, ?)",
+        [
+          sampleCompanyName,
+          "서울시 강남구 테헤란로 10",
+          "02-0000-0000",
+          "123-45-67890",
+          "forest@demo.com",
+          hashPassword("forest123!"),
+        ]
+      );
+      hostCompanyId = insertCompany.insertId;
+    }
+
+    // program
+    let programId = null;
+    const [programRows] = await connection.query("SELECT program_id, status FROM program WHERE title = ? LIMIT 1", [
+      sampleProgramTitle,
+    ]);
+    if (programRows.length) {
+      programId = programRows[0].program_id;
+      if (programRows[0].status !== "FINISHED") {
+        await connection.query("UPDATE program SET status = 'FINISHED' WHERE program_id = ?", [programId]);
+      }
+    } else {
+      const [insertProgram] = await connection.query(
+        `INSERT INTO program
+          (title, place, start_date, end_date, description, status, account_number, goal_amount, category_id, host_company_id)
+        VALUES (?, ?, ?, ?, ?, 'FINISHED', ?, ?, ?, ?)`,
+        [
+          sampleProgramTitle,
+          "서울 서초구 우면산 일대",
+          "2024-03-01",
+          "2024-05-31",
+          "시민 참여형으로 도심 숲을 되살리는 활동",
+          "110-398-123456",
+          800000,
+          categoryId,
+          hostCompanyId,
+        ]
+      );
+      programId = insertProgram.insertId;
+    }
+
+    // donation
+    const [donationRows] = await connection.query(
+      "SELECT donation_id FROM donation WHERE donor_id = ? AND program_id = ? AND status = 'PAID' LIMIT 1",
+      [donorId, programId]
+    );
+    if (!donationRows.length) {
+      await connection.query(
+        `INSERT INTO donation (donor_id, program_id, subscription_id, amount, paid_at, payment_method, status, memo)
+         VALUES (?, ?, NULL, ?, DATE_SUB(NOW(), INTERVAL 25 DAY), 'CARD', 'PAID', ?)`,
+        [donorId, programId, 350000, "종료된 프로그램 영수증 샘플"]
+      );
+    }
+
+    // expenses
+    const expenseSeed = [
+      ["2024-03-10", "산림조합중앙회", "묘목 구매", 180000],
+      ["2024-03-18", "에코물류", "현장 운송비", 82000],
+      ["2024-04-05", "서초구 협력 농협", "봉사자 식비 및 다과", 64000],
+    ];
+    for (const [expense_date, vendor, description, amount] of expenseSeed) {
+      const [exists] = await connection.query(
+        "SELECT expense_id FROM expense WHERE program_id = ? AND expense_date = ? AND vendor = ? LIMIT 1",
+        [programId, expense_date, vendor]
+      );
+      if (exists.length) continue;
+      await connection.query(
+        "INSERT INTO expense (program_id, expense_date, vendor, description, amount) VALUES (?, ?, ?, ?, ?)",
+        [programId, expense_date, vendor, description, amount]
+      );
+    }
+
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback();
+    console.error("샘플 종료 프로그램 보장 실패", error);
+  } finally {
+    connection.release();
+  }
+}
 
 function normalizeCategoryRow(row = {}) {
   const rawId = row.category_id ?? row.id;
@@ -275,8 +460,6 @@ function normalizeCategoryRow(row = {}) {
     description: row.description ?? "",
   };
 }
-
-sampleCategoryState = SAMPLE_CATEGORIES.map((category) => normalizeCategoryRow(category));
 
 function filterCategories(categories, { keyword = "", searchField = "all" }) {
   if (!keyword) return categories;
@@ -311,37 +494,6 @@ function sortCategories(categories, sortField = "category_id") {
       return list.sort((a, b) => comparator(a, b, "category_id"));
   }
 }
-
-const SAMPLE_COMPANIES_RAW = [
-  {
-    company_id: 1,
-    company_name: "경산아동센터",
-    contact: "010-1111-2222",
-    address: "경산시 중산로 15",
-    program_ids: [1, 3],
-  },
-  {
-    company_id: 2,
-    company_name: "푸른도시연구회",
-    contact: "02-345-6789",
-    address: "서울시 서초구 서초대로 123",
-    program_ids: [2],
-  },
-  {
-    company_id: 3,
-    company_name: "함께하는 PAWS",
-    contact: "010-5555-9876",
-    address: "서울시 마포구 월드컵북로 45",
-    program_ids: [4],
-  },
-  {
-    company_id: 4,
-    company_name: "희망혈액원",
-    contact: "051-800-7777",
-    address: "부산시 해운대구 센텀중앙로 99",
-    program_ids: [5],
-  },
-];
 
 function normalizeCompany(company = {}, programLookup = new Map()) {
   const rawId = company.company_id ?? company.id ?? null;
@@ -379,25 +531,18 @@ function normalizeCompany(company = {}, programLookup = new Map()) {
   };
 }
 
-function buildSampleCompanies() {
-  const programMap = sampleProgramState.reduce((acc, program) => {
-    const key = program.host_company_id ?? program.company_id ?? "UNASSIGNED";
-    const list = acc.get(key) ?? [];
-    list.push(program);
-    acc.set(key, list);
-    return acc;
-  }, new Map());
-
-  return SAMPLE_COMPANIES_RAW.map((company) => {
-    const programs = programMap.get(company.company_id) ?? [];
-    return normalizeCompany({ ...company, programs }, programMap);
-  }).filter(Boolean);
-}
-
 function parseDate(value) {
   if (!value) return null;
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function diffInMonths(start, end) {
+  if (!start || !end) return 0;
+  const startDate = parseDate(start);
+  const endDate = parseDate(end);
+  if (!startDate || !endDate) return 0;
+  return (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth());
 }
 
 function compareDatesAsc(a, b) {
@@ -527,7 +672,7 @@ app.post("/api/donors", async (req, res) => {
   const { name, email = null, phone = null, password } = req.body ?? {};
   if (!name || !password) return res.status(400).json({ error: "name, password 필수" });
   try {
-    // 실제 운영에서는 bcrypt 해시 사용 권장
+    // 실제 운영에서는 bcrypt 해시 사용
     const sql =
       "INSERT INTO donor (name, email, phone, password, created_at) VALUES (?, ?, ?, ?, NOW())";
     const [r] = await pool.execute(sql, [name, email, phone, password]);
@@ -569,7 +714,7 @@ app.post("/api/companies", async (req, res) => {
 
   try {
     const sql = `
-      INSERT INTO Program_Host_Company (company_name, address, company_phone, business_no, email, password_hash)
+      INSERT INTO program_host_company (company_name, address, company_phone, business_no, email, password_hash)
       VALUES (?, ?, ?, ?, ?, ?)
     `;
     const [r] = await pool.execute(sql, [
@@ -631,7 +776,7 @@ app.post("/api/login", async (req, res) => {
     }
 
     const companySql =
-      "SELECT host_company_id, company_name, email, password_hash FROM Program_Host_Company WHERE email = ? LIMIT 1";
+      "SELECT host_company_id, company_name, email, password_hash FROM program_host_company WHERE email = ? LIMIT 1";
     const [companyRows] = await pool.query(companySql, [loginId]);
     const company = Array.isArray(companyRows) ? companyRows[0] : undefined;
 
@@ -718,7 +863,7 @@ app.get("/api/companies", async (req, res) => {
 
   try {
     const [companyRows] = await pool.query(
-      "SELECT host_company_id AS company_id, company_name, company_phone AS contact, company_phone AS phone, address FROM Program_Host_Company"
+      "SELECT host_company_id AS company_id, company_name, company_phone AS contact, company_phone AS phone, address FROM program_host_company"
     );
     const companies = Array.isArray(companyRows) ? companyRows : [];
 
@@ -731,7 +876,7 @@ app.get("/api/companies", async (req, res) => {
 
       if (ids.length) {
         const [programRows] = await pool.query(
-          "SELECT program_id, title, status, category_id, host_company_id, start_date, end_date, goal_amount, description, place FROM Program WHERE host_company_id IN (?)",
+          "SELECT program_id, title, status, category_id, host_company_id, start_date, end_date, goal_amount, description, place FROM program WHERE host_company_id IN (?)",
           [ids]
         );
         const normalizedPrograms = mapPrograms(programRows);
@@ -771,20 +916,7 @@ app.get("/api/companies", async (req, res) => {
   } catch (error) {
     console.error("회사 목록 조회 실패", error);
   }
-
-  const fallbackCompanies = buildSampleCompanies();
-  const filteredFallback = keyword
-    ? fallbackCompanies.filter((company) => {
-        const base = `${company.company_name} ${company.contact} ${company.address}`.toLowerCase();
-        const matchCompany = base.includes(keyword.toLowerCase());
-        const matchProgram = company.programs?.some((program) =>
-          (program.program_name ?? "").toLowerCase().includes(keyword.toLowerCase())
-        );
-        return matchCompany || matchProgram;
-      })
-    : fallbackCompanies;
-
-  res.json(filteredFallback);
+  res.json([]);
 });
 
 app.get("/api/categories", async (req, res) => {
@@ -821,7 +953,7 @@ app.get("/api/categories", async (req, res) => {
     }
 
     const orderBy = sortField === "category_name" ? "name" : "category_id";
-    const sql = `SELECT category_id, name, description FROM Category ${
+    const sql = `SELECT category_id, name, description FROM category ${
       clauses.length ? `WHERE ${clauses.join(" AND ")}` : ""
     } ORDER BY ${orderBy} ASC`;
 
@@ -839,8 +971,7 @@ app.get("/api/categories", async (req, res) => {
     console.error("카테고리 조회 실패", error);
   }
 
-  const filteredSample = filterCategories(sampleCategoryState, { keyword, searchField });
-  res.json(sortCategories(filteredSample, sortField));
+  res.json([]);
 });
 
 app.post("/api/categories", async (req, res) => {
@@ -855,47 +986,29 @@ app.post("/api/categories", async (req, res) => {
 
   try {
     if (category_id) {
-      await pool.execute("INSERT INTO Category (category_id, name, description) VALUES (?, ?, ?)", [
+      await pool.execute("INSERT INTO category (category_id, name, description) VALUES (?, ?, ?)", [
         Number(category_id),
         category_name,
         description,
       ]);
     } else {
-      const [result] = await pool.execute("INSERT INTO Category (name, description) VALUES (?, ?)", [
+      const [result] = await pool.execute("INSERT INTO category (name, description) VALUES (?, ?)", [
         category_name,
         description,
       ]);
       const insertId = result?.insertId;
       const category = normalizeCategoryRow({ category_id: insertId, name: category_name, description });
-      sampleCategoryState = sortCategories(
-        [...sampleCategoryState.filter((c) => c.category_id !== category.category_id), category],
-        "category_id"
-      );
       res.status(201).json(category);
       return;
     }
 
     const category = normalizeCategoryRow({ category_id, name: category_name, description });
-    sampleCategoryState = sortCategories(
-      [...sampleCategoryState.filter((c) => c.category_id !== category.category_id), category],
-      "category_id"
-    );
     res.status(201).json(category);
     return;
   } catch (error) {
     console.error("카테고리 추가 실패", error);
+    return res.status(500).json({ error: "카테고리를 추가하지 못했습니다." });
   }
-
-  if (sampleCategoryState.some((category) => String(category.category_id) === String(category_id))) {
-    return res.status(409).json({ error: "이미 존재하는 카테고리입니다." });
-  }
-
-  const nextId = category_id
-    ? Number(category_id)
-    : Math.max(0, ...sampleCategoryState.map((category) => Number(category.category_id) || 0)) + 1;
-  const category = normalizeCategoryRow({ category_id: nextId, name: category_name, description });
-  sampleCategoryState = sortCategories([...sampleCategoryState, category], "category_id");
-  res.status(201).json(category);
 });
 
 app.delete("/api/categories/:categoryId", async (req, res) => {
@@ -903,49 +1016,77 @@ app.delete("/api/categories/:categoryId", async (req, res) => {
   if (!categoryId) return res.status(400).json({ error: "categoryId 필수" });
 
   try {
-    const [result] = await pool.execute("DELETE FROM Category WHERE category_id = ?", [Number(categoryId)]);
+    const [result] = await pool.execute("DELETE FROM category WHERE category_id = ?", [Number(categoryId)]);
     if (result?.affectedRows) {
-      sampleCategoryState = sampleCategoryState.filter(
-        (category) => String(category.category_id) !== String(categoryId)
-      );
       res.status(204).end();
       return;
     }
   } catch (error) {
     console.error("카테고리 삭제 실패", error);
+    return res.status(500).json({ error: "카테고리를 삭제하지 못했습니다." });
   }
-
-  const index = sampleCategoryState.findIndex(
-    (category) => String(category.category_id) === String(categoryId)
-  );
-  if (index === -1) return res.status(404).json({ error: "삭제할 카테고리를 찾지 못했습니다." });
-
-  sampleCategoryState.splice(index, 1);
-  res.status(204).end();
 });
 
 app.get("/api/donor/programs", async (_req, res) => {
   try {
-    const [rows] = await pool.query("CALL GetPrograms()");
-    const resultSet = Array.isArray(rows) ? (Array.isArray(rows[0]) ? rows[0] : rows) : [];
-    const normalized = sortPrograms(
-      mapPrograms(resultSet).filter((program) => program.status === "running"),
-      "deadline_asc"
+    const [rows] = await pool.query(
+      `
+        SELECT
+          p.program_id,
+          p.title,
+          p.status,
+          p.funding_type,
+          p.category_id,
+          c.name AS category_name,
+          p.host_company_id,
+          hc.company_name,
+          hc.company_phone,
+          hc.address,
+          p.start_date,
+          p.end_date,
+          p.goal_amount,
+          COALESCE(SUM(CASE WHEN d.status = 'PAID' THEN d.amount ELSE 0 END), 0) AS total_amount,
+          COUNT(DISTINCT CASE WHEN d.status = 'PAID' THEN d.donor_id END) AS donor_count,
+          p.description,
+          p.place,
+          p.funding_type,
+          CASE
+            WHEN p.funding_type IN ('SUBSCRIPTION','BOTH') THEN 1
+            ELSE 0
+          END AS monthly_flag
+        FROM program p
+        LEFT JOIN category c ON c.category_id = p.category_id
+        LEFT JOIN program_host_company hc ON hc.host_company_id = p.host_company_id
+        LEFT JOIN donation d ON d.program_id = p.program_id
+        WHERE p.status = 'RUNNING'
+        GROUP BY
+          p.program_id,
+          p.title,
+          p.status,
+          p.category_id,
+          c.name,
+          p.host_company_id,
+          hc.company_name,
+          hc.company_phone,
+          hc.address,
+          p.start_date,
+          p.end_date,
+          p.goal_amount,
+          p.description,
+          p.place
+        HAVING COALESCE(SUM(CASE WHEN d.status = 'PAID' THEN d.amount ELSE 0 END), 0) >= 0
+        ORDER BY p.end_date ASC, p.program_id ASC
+      `
     );
 
-    if (normalized.length) {
-      res.json(normalized);
-      return;
-    }
+    const normalized = sortPrograms(mapPrograms(rows), "deadline_asc");
+    res.json(normalized);
+    return;
   } catch (error) {
     console.error("진행 중 프로그램 조회 실패", error);
   }
 
-  const fallback = sortPrograms(
-    sampleProgramState.filter((program) => program.status === "running"),
-    "deadline_asc"
-  );
-  res.json(fallback);
+  res.json([]);
 });
 
 app.get("/api/programs", async (req, res) => {
@@ -956,6 +1097,7 @@ app.get("/api/programs", async (req, res) => {
     sort: rawSort,
     host_company_id: rawHostCompanyId,
     hostCompanyId: rawHostCompanyIdAlt,
+    monthly: rawMonthly,
   } = req.query ?? {};
 
   const keyword = typeof rawKeyword === "string" && rawKeyword.trim().length ? rawKeyword.trim() : null;
@@ -968,10 +1110,15 @@ app.get("/api/programs", async (req, res) => {
     rawHostCompanyId ?? rawHostCompanyIdAlt ?? null;
 
   const allowedStatuses = new Set(["all", "pending", "planned", "running", "finished", "rejected"]);
-  const status =
-    typeof rawStatus === "string" && allowedStatuses.has(rawStatus) && rawStatus !== "all"
-      ? rawStatus.toLowerCase()
-      : null;
+  const statusList =
+    typeof rawStatus === "string"
+      ? rawStatus
+          .split(",")
+          .map((value) => value.trim().toLowerCase())
+          .filter((value) => allowedStatuses.has(value) && value !== "all")
+      : [];
+  const status = statusList.length === 1 ? statusList[0] : null;
+  const monthlyOnly = parseBooleanFlag(rawMonthly, false);
 
   const allowedSorts = new Set([
     "deadline_asc",
@@ -994,18 +1141,58 @@ app.get("/api/programs", async (req, res) => {
         params.push(category);
       }
 
-      if (status) {
+      if (statusList.length === 1) {
         clauses.push("status = ?");
-        params.push(status.toUpperCase());
+        params.push(statusList[0].toUpperCase());
+      } else if (statusList.length > 1) {
+        clauses.push(`status IN (${statusList.map(() => "?").join(", ")})`);
+        params.push(...statusList.map((value) => value.toUpperCase()));
+      }
+
+      if (monthlyOnly) {
+        clauses.push("funding_type IN ('SUBSCRIPTION','BOTH')");
       }
 
       const whereSql = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
 
       const [rows] = await pool.query(
-        `SELECT program_id, title, status, category_id, host_company_id, start_date, end_date, goal_amount, description, place, account_number
-         FROM Program
+        `SELECT
+            p.program_id,
+            p.title,
+            p.status,
+            p.category_id,
+            p.host_company_id,
+            p.start_date,
+            p.end_date,
+            p.goal_amount,
+            p.description,
+            p.place,
+            p.account_number,
+            p.funding_type,
+            COALESCE(SUM(CASE WHEN d.status = 'PAID' THEN d.amount ELSE 0 END), 0) AS total_amount,
+            COUNT(DISTINCT CASE WHEN d.status = 'PAID' THEN d.donor_id END) AS donor_count,
+            CASE
+              WHEN p.funding_type IN ('SUBSCRIPTION','BOTH') THEN 1
+              ELSE 0
+            END AS monthly_flag
+         FROM program p
+         LEFT JOIN donation d ON d.program_id = p.program_id
          ${whereSql}
-         ORDER BY program_id DESC`,
+         GROUP BY
+            p.program_id,
+            p.title,
+            p.status,
+            p.category_id,
+            p.host_company_id,
+            p.start_date,
+            p.end_date,
+            p.goal_amount,
+            p.description,
+            p.place,
+            p.account_number,
+            p.funding_type
+         HAVING COALESCE(SUM(CASE WHEN d.status = 'PAID' THEN d.amount ELSE 0 END), 0) >= 0
+         ORDER BY p.program_id DESC`,
         params
       );
 
@@ -1013,21 +1200,7 @@ app.get("/api/programs", async (req, res) => {
       return res.json(normalized);
     } catch (error) {
       console.error("회사별 프로그램 조회 실패", error);
-      const fallback = sampleProgramState.filter((program) => {
-        const matchHost = String(program.host_company_id ?? "") === String(hostCompanyId);
-        const matchCategory = category
-          ? String(program.category_id ?? program.category) === String(category)
-          : true;
-        const matchStatus = status ? String(program.status) === String(status) : true;
-        const matchKeyword = keyword
-          ? [program.program_id, program.program_name, program.title]
-              .map((value) => String(value ?? "").toLowerCase())
-              .some((value) => value.includes(keyword.toLowerCase()))
-          : true;
-        return matchHost && matchCategory && matchStatus && matchKeyword;
-      });
-
-      return res.json(sortPrograms(mapPrograms(fallback), sort));
+      return res.json([]);
     }
   }
 
@@ -1048,9 +1221,16 @@ app.get("/api/programs", async (req, res) => {
       params.push(category);
     }
 
-    if (status) {
+    if (statusList.length === 1) {
       clauses.push("p.status = ?");
-      params.push(status.toUpperCase());
+      params.push(statusList[0].toUpperCase());
+    } else if (statusList.length > 1) {
+      clauses.push(`p.status IN (${statusList.map(() => "?").join(", ")})`);
+      params.push(...statusList.map((value) => value.toUpperCase()));
+    }
+
+    if (monthlyOnly) {
+      clauses.push("p.funding_type IN ('SUBSCRIPTION','BOTH')");
     }
 
     const whereSql = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
@@ -1071,6 +1251,7 @@ app.get("/api/programs", async (req, res) => {
           p.program_id,
           p.title,
           p.status,
+          p.funding_type,
           p.category_id,
           c.name AS category_name,
           p.host_company_id,
@@ -1081,12 +1262,17 @@ app.get("/api/programs", async (req, res) => {
           p.end_date,
           p.goal_amount,
           COALESCE(SUM(CASE WHEN d.status = 'PAID' THEN d.amount ELSE 0 END), 0) AS total_amount,
+          COUNT(DISTINCT CASE WHEN d.status = 'PAID' THEN d.donor_id END) AS donor_count,
           p.description,
-          p.place
-        FROM Program p
-        LEFT JOIN Category c ON c.category_id = p.category_id
-        LEFT JOIN Program_Host_Company hc ON hc.host_company_id = p.host_company_id
-        LEFT JOIN Donation d ON d.program_id = p.program_id
+          p.place,
+          CASE
+            WHEN p.funding_type IN ('SUBSCRIPTION','BOTH') THEN 1
+            ELSE 0
+          END AS monthly_flag
+        FROM program p
+        LEFT JOIN category c ON c.category_id = p.category_id
+        LEFT JOIN program_host_company hc ON hc.host_company_id = p.host_company_id
+        LEFT JOIN donation d ON d.program_id = p.program_id
         ${whereSql}
         GROUP BY
           p.program_id,
@@ -1103,6 +1289,7 @@ app.get("/api/programs", async (req, res) => {
           p.goal_amount,
           p.description,
           p.place
+        HAVING COALESCE(SUM(CASE WHEN d.status = 'PAID' THEN d.amount ELSE 0 END), 0) >= 0
         ${orderSql}
       `,
       params
@@ -1112,7 +1299,7 @@ app.get("/api/programs", async (req, res) => {
     res.json(normalized);
   } catch (e) {
     console.error("프로그램 조회 실패", e);
-    res.json(sortPrograms(mapPrograms(sampleProgramState), sort));
+    res.json([]);
   }
 });
 
@@ -1135,6 +1322,12 @@ app.post("/api/programs", async (req, res) => {
     hostCompanyId,
     place,
     location,
+    monthly,
+    is_recurring,
+    allow_monthly_donation,
+    monthly_donation,
+    monthlyDonation,
+    funding_type,
   } = req.body ?? {};
 
   const normalizedTitle = (title ?? program_title ?? "").trim();
@@ -1153,12 +1346,33 @@ app.post("/api/programs", async (req, res) => {
     return res.status(400).json({ error: "title, category_id, host_company_id, start_date, end_date 필수" });
   }
 
+  const startDateObj = parseDate(normalizedStart);
+  const endDateObj = parseDate(normalizedEnd);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (!startDateObj || !endDateObj) {
+    return res.status(400).json({ error: "유효한 날짜를 입력해주세요." });
+  }
+
+  if (startDateObj.getTime() <= today.getTime()) {
+    return res.status(400).json({ error: "시작일이 이미 도래한 프로그램은 신청할 수 없습니다. 오늘 이후 날짜로 설정해 주세요." });
+  }
+
+  if (endDateObj.getTime() <= startDateObj.getTime()) {
+    return res.status(400).json({ error: "종료일은 시작일 이후여야 합니다." });
+  }
+
   try {
     const sql = `
-      INSERT INTO Program
-        (title, start_date, end_date, description, status, account_number, goal_amount, category_id, host_company_id, place)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO program
+        (title, start_date, end_date, description, status, account_number, goal_amount, category_id, host_company_id, place, funding_type)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
+    const normalizedFunding =
+      (funding_type ?? monthly ?? monthly_donation ?? monthlyDonation ?? is_recurring ?? allow_monthly_donation)
+        ? "SUBSCRIPTION"
+        : "ONE_TIME";
 
     const [r] = await pool.execute(sql, [
       normalizedTitle,
@@ -1171,6 +1385,7 @@ app.post("/api/programs", async (req, res) => {
       normalizedCategory,
       normalizedHost,
       normalizedPlace,
+      normalizedFunding,
     ]);
 
     const createdProgram = {
@@ -1185,10 +1400,8 @@ app.post("/api/programs", async (req, res) => {
       category_id: normalizedCategory,
       host_company_id: normalizedHost,
       place: normalizedPlace,
+      funding_type: normalizedFunding,
     };
-
-    // 샘플 데이터 사용 중인 경우 새 프로그램을 추가해 둔다.
-    sampleProgramState = [{ ...createdProgram, program_name: normalizedTitle }, ...sampleProgramState];
 
     res.status(201).json(createdProgram);
   } catch (e) {
@@ -1218,12 +1431,17 @@ app.get("/api/programs/:programId", async (req, res) => {
           p.end_date,
           p.goal_amount,
           COALESCE(SUM(CASE WHEN d.status = 'PAID' THEN d.amount ELSE 0 END), 0) AS total_amount,
+          COUNT(DISTINCT CASE WHEN d.status = 'PAID' THEN d.donor_id END) AS donor_count,
           p.description,
-          p.place
-        FROM Program p
-        LEFT JOIN Category c ON c.category_id = p.category_id
-        LEFT JOIN Program_Host_Company hc ON hc.host_company_id = p.host_company_id
-        LEFT JOIN Donation d ON d.program_id = p.program_id
+          p.place,
+          CASE
+            WHEN p.funding_type IN ('SUBSCRIPTION','BOTH') THEN 1
+            ELSE 0
+          END AS monthly_flag
+        FROM program p
+        LEFT JOIN category c ON c.category_id = p.category_id
+        LEFT JOIN program_host_company hc ON hc.host_company_id = p.host_company_id
+        LEFT JOIN donation d ON d.program_id = p.program_id
         WHERE p.program_id = ?
         GROUP BY
           p.program_id,
@@ -1251,13 +1469,71 @@ app.get("/api/programs/:programId", async (req, res) => {
     console.error("프로그램 상세 조회 실패", error);
   }
 
-  const fallback = sampleProgramState.find((program) => String(program.program_id) === String(programId));
-  if (fallback) {
-    res.json(normalizeProgram(fallback));
-    return;
+  res.status(404).json({ error: "프로그램을 찾을 수 없습니다." });
+});
+
+app.post("/api/subscriptions", async (req, res) => {
+  const {
+    donor_id: rawDonorId,
+    program_id: rawProgramId,
+    amount: rawAmount,
+    cycle: rawCycle,
+    start_date: rawStartDate,
+    status: rawStatus,
+  } = req.body ?? {};
+
+  const donor_id = Number(rawDonorId);
+  const program_id = Number(rawProgramId);
+  const amount = Number(rawAmount);
+  const cycle = typeof rawCycle === "string" ? rawCycle.toUpperCase() : "MONTHLY";
+  const start_date = rawStartDate ?? null;
+  const status = typeof rawStatus === "string" ? rawStatus.toUpperCase() : "ACTIVE";
+
+  if (!donor_id || !program_id || !Number.isFinite(amount) || amount <= 0) {
+    return res.status(400).json({ error: "donor_id, program_id, amount(양수) 필수" });
   }
 
-  res.status(404).json({ error: "프로그램을 찾을 수 없습니다." });
+  if (!["MONTHLY", "YEARLY"].includes(cycle)) {
+    return res.status(400).json({ error: "cycle은 MONTHLY 또는 YEARLY만 가능합니다." });
+  }
+
+  const startDateObj = parseDate(start_date);
+  if (!startDateObj) {
+    return res.status(400).json({ error: "start_date가 올바르지 않습니다." });
+  }
+
+  try {
+    const [programRows] = await pool.query("SELECT program_id FROM program WHERE program_id = ? LIMIT 1", [program_id]);
+    const programRow = Array.isArray(programRows) ? programRows[0] : null;
+    if (!programRow) {
+      return res.status(404).json({ error: "프로그램을 찾을 수 없습니다." });
+    }
+  } catch (error) {
+    console.error("프로그램 확인 실패", error);
+  }
+
+  try {
+    const sql = `
+      INSERT INTO Subscription (donor_id, program_id, amount, cycle, start_date, status)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+    const [result] = await pool.execute(sql, [donor_id, program_id, amount, cycle, start_date, status]);
+
+    res.status(201).json({
+      subscription_id: result?.insertId ?? null,
+      donor_id,
+      program_id,
+      amount,
+      cycle,
+      start_date,
+      status,
+    });
+    return;
+  } catch (error) {
+    console.error("정기기부 등록 실패", error);
+  }
+
+  res.status(500).json({ error: "정기기부를 처리하지 못했습니다." });
 });
 
 app.post("/api/donations", async (req, res) => {
@@ -1301,14 +1577,7 @@ app.post("/api/donations", async (req, res) => {
   } catch (error) {
     console.error("기부 등록 실패", error);
   }
-
-  const fallbackDonation = recordSampleDonation({ donor_id, program_id, amount, message });
-  if (!fallbackDonation) {
-    res.status(500).json({ error: "기부를 처리하지 못했습니다." });
-    return;
-  }
-
-  res.status(201).json(fallbackDonation);
+  res.status(500).json({ error: "기부를 처리하지 못했습니다." });
 });
 
 app.patch("/api/programs/:programId/status", async (req, res) => {
@@ -1335,27 +1604,14 @@ app.patch("/api/programs/:programId/status", async (req, res) => {
     ]);
 
     if (result?.affectedRows) {
-      const [rows] = await pool.query("SELECT * FROM Program WHERE program_id = ? LIMIT 1", [programId]);
+    const [rows] = await pool.query("SELECT * FROM program WHERE program_id = ? LIMIT 1", [programId]);
       res.json(normalizeProgram(rows?.[0]));
       return;
     }
   } catch (error) {
     console.error("프로그램 상태 변경 실패", error);
   }
-
-  const index = sampleProgramState.findIndex((program) => String(program.program_id) === String(programId));
-  if (index === -1) return res.status(404).json({ error: "프로그램을 찾을 수 없습니다." });
-
-  const statusInfo = PROGRAM_STATUS[normalizedKey] ?? normalizeStatus(normalizedKey);
-
-  sampleProgramState[index] = {
-    ...sampleProgramState[index],
-    status: statusInfo.code,
-    status_label: statusInfo.label,
-    updated_at: new Date().toISOString(),
-  };
-
-  res.json(sampleProgramState[index]);
+  res.status(500).json({ error: "프로그램 상태를 변경하지 못했습니다." });
 });
 
 app.delete("/api/programs/:programId", async (req, res) => {
@@ -1365,10 +1621,10 @@ app.delete("/api/programs/:programId", async (req, res) => {
   }
 
   try {
-    const [result] = await pool.execute(
-      "DELETE FROM Program WHERE program_id = ? AND status = 'PLANNED'",
-      [programId]
-    );
+      const [result] = await pool.execute(
+        "DELETE FROM program WHERE program_id = ? AND status = 'PLANNED'",
+        [programId]
+      );
     if (result?.affectedRows) {
       res.status(204).end();
       return;
@@ -1376,17 +1632,278 @@ app.delete("/api/programs/:programId", async (req, res) => {
   } catch (error) {
     console.error("프로그램 삭제 실패", error);
   }
+  res.status(500).json({ error: "프로그램을 삭제하지 못했습니다." });
+});
 
-  const index = sampleProgramState.findIndex((program) => String(program.program_id) === String(programId));
-  if (index === -1) return res.status(404).json({ error: "삭제할 프로그램을 찾지 못했습니다." });
+app.get("/api/donors/:donorId/summary", async (req, res) => {
+  const { donorId } = req.params ?? {};
+  const donor_id = Number(donorId);
+  if (!donor_id) return res.status(400).json({ error: "donorId 필수" });
 
-  if (sampleProgramState[index].status !== "planned") {
-    return res.status(409).json({ error: "계획 상태의 프로그램만 삭제할 수 있습니다." });
+  try {
+    const [donorRows] = await pool.query("SELECT donor_id, name, email, phone FROM donor WHERE donor_id = ? LIMIT 1", [
+      donor_id,
+    ]);
+    const donor = Array.isArray(donorRows) ? donorRows[0] : null;
+
+    const [rows] = await pool.query(
+      `
+        SELECT
+          d.donation_id,
+          d.amount,
+          d.paid_at AS donated_at,
+          d.memo AS message,
+          p.program_id,
+          p.title AS program_title,
+          p.status AS program_status,
+          p.category_id,
+          p.start_date,
+          p.end_date
+        FROM Donation d
+        LEFT JOIN Program p ON p.program_id = d.program_id
+        WHERE d.donor_id = ?
+        ORDER BY d.paid_at DESC, d.donation_id DESC
+      `,
+      [donor_id]
+    );
+
+    if (donor) {
+      const donations = Array.isArray(rows) ? rows : [];
+      const total_amount = donations.reduce((sum, item) => sum + Number(item.amount ?? 0), 0);
+      return res.json({
+        donor,
+        summary: {
+          total_amount,
+          donation_count: donations.length,
+        },
+        donations: donations.map((item) => ({
+          donation_id: item.donation_id,
+          amount: Number(item.amount ?? 0),
+          donated_at: item.donated_at,
+          message: item.message ?? "",
+          program: normalizeProgram({
+            program_id: item.program_id,
+            title: item.program_title,
+            status: item.program_status,
+            category_id: item.category_id,
+            start_date: item.start_date,
+            end_date: item.end_date,
+          }),
+        })),
+      });
+    }
+  } catch (error) {
+    console.error("후원자 요약 조회 실패", error);
   }
 
-  sampleProgramState.splice(index, 1);
-  res.status(204).end();
+  res.status(500).json({ error: "후원자 요약 정보를 불러오지 못했습니다." });
+});
+
+app.get("/api/donors/:donorId/programs/:programId/receipt", async (req, res) => {
+  const { donorId, programId } = req.params ?? {};
+  const donor_id = Number(donorId);
+  const program_id = Number(programId);
+
+  if (!donor_id || !program_id) {
+    return res.status(400).json({ error: "donorId, programId 필수" });
+  }
+
+  try {
+    const [donationRows] = await pool.query(
+      `
+        SELECT
+          d.donation_id,
+          d.amount,
+          d.paid_at,
+          d.payment_method,
+          d.status AS donation_status,
+          p.program_id,
+          p.title,
+          p.status AS program_status,
+          p.category_id,
+          c.name AS category_name,
+          p.start_date,
+          p.end_date,
+          p.place,
+          p.goal_amount,
+          hc.company_name
+        FROM donation d
+        INNER JOIN program p ON p.program_id = d.program_id
+        LEFT JOIN category c ON c.category_id = p.category_id
+        LEFT JOIN program_host_company hc ON hc.host_company_id = p.host_company_id
+        WHERE d.donor_id = ? AND p.program_id = ?
+        ORDER BY d.paid_at DESC, d.donation_id DESC
+      `,
+      [donor_id, program_id]
+    );
+
+    if (!donationRows.length) {
+      return res.status(404).json({ error: "해당 후원 내역을 찾을 수 없습니다." });
+    }
+
+    const programInfo = donationRows[0];
+    const statusInfo = normalizeStatus(programInfo.program_status);
+    if (statusInfo.code !== "finished") {
+      return res.status(400).json({ error: "종료된 프로그램의 영수증만 확인할 수 있습니다." });
+    }
+
+    const totalDonated = donationRows
+      .filter((item) => item.donation_status === "PAID")
+      .reduce((sum, item) => sum + Number(item.amount ?? 0), 0);
+
+    const [expenseRows] = await pool.query(
+      `
+        SELECT expense_id, expense_date, vendor, description, amount
+        FROM expense
+        WHERE program_id = ?
+        ORDER BY expense_date DESC, expense_id DESC
+      `,
+      [program_id]
+    );
+
+    const totalSpent = expenseRows.reduce((sum, item) => sum + Number(item.amount ?? 0), 0);
+
+    res.json({
+      program: normalizeProgram({
+        program_id: programInfo.program_id,
+        title: programInfo.title,
+        status: programInfo.program_status,
+        category_id: programInfo.category_id,
+        category_name: programInfo.category_name,
+        start_date: programInfo.start_date,
+        end_date: programInfo.end_date,
+        place: programInfo.place,
+        goal_amount: programInfo.goal_amount,
+        organization: programInfo.company_name,
+      }),
+      donation: {
+        total_amount: totalDonated,
+        payments: donationRows.map((item) => ({
+          donation_id: item.donation_id,
+          amount: Number(item.amount ?? 0),
+          paid_at: item.paid_at,
+          payment_method: item.payment_method,
+          status: item.donation_status,
+        })),
+      },
+      expenses: expenseRows.map((item) => ({
+        expense_id: item.expense_id,
+        expense_date: item.expense_date,
+        vendor: item.vendor,
+        description: item.description ?? "",
+        amount: Number(item.amount ?? 0),
+      })),
+      totals: {
+        donated: totalDonated,
+        spent: totalSpent,
+        remaining: totalDonated - totalSpent,
+      },
+    });
+  } catch (error) {
+    console.error("영수증 조회 실패", error);
+    res.status(500).json({ error: "영수증 정보를 불러오지 못했습니다." });
+  }
+});
+
+app.patch("/api/donors/:donorId", async (req, res) => {
+  const { donorId } = req.params ?? {};
+  const donor_id = Number(donorId);
+  if (!donor_id) return res.status(400).json({ error: "donorId 필수" });
+
+  const { name, phone, password, new_password, newPassword, current_password, currentPassword } = req.body ?? {};
+  const providedCurrent = current_password ?? currentPassword ?? null;
+  const updates = [];
+  const params = [];
+
+  try {
+    const [rows] = await pool.query(
+      "SELECT donor_id, name, email, phone, password AS stored_password FROM donor WHERE donor_id = ? LIMIT 1",
+      [donor_id]
+    );
+    const donor = Array.isArray(rows) ? rows[0] : null;
+
+    if (donor && donor.stored_password !== undefined) {
+      if (!providedCurrent || donor.stored_password !== providedCurrent) {
+        return res.status(401).json({ error: "현재 비밀번호가 일치하지 않습니다." });
+      }
+    }
+  } catch (error) {
+    console.error("후원자 비밀번호 확인 실패", error);
+  }
+
+  if (typeof name === "string" && name.trim()) {
+    updates.push("name = ?");
+    params.push(name.trim());
+  }
+
+  if (typeof phone === "string" && phone.trim()) {
+    updates.push("phone = ?");
+    params.push(phone.trim());
+  }
+
+  const nextPassword = new_password ?? newPassword ?? password;
+  if (typeof nextPassword === "string" && nextPassword.trim()) {
+    updates.push("password = ?");
+    params.push(nextPassword.trim());
+  }
+
+  if (!updates.length) {
+    return res.status(400).json({ error: "수정할 항목이 없습니다." });
+  }
+
+  try {
+    const sql = `UPDATE donor SET ${updates.join(", ")} WHERE donor_id = ?`;
+    params.push(donor_id);
+    const [result] = await pool.execute(sql, params);
+
+    if (result?.affectedRows) {
+      const [rows] = await pool.query("SELECT donor_id, name, email, phone FROM donor WHERE donor_id = ? LIMIT 1", [
+        donor_id,
+      ]);
+      const donor = Array.isArray(rows) ? rows[0] : null;
+      if (donor) {
+        return res.json(donor);
+      }
+    }
+  } catch (error) {
+    console.error("후원자 정보 수정 실패", error);
+  }
+
+  res.status(500).json({ error: "후원자 정보를 수정하지 못했습니다." });
+});
+
+app.post("/api/donors/:donorId/verify", async (req, res) => {
+  const { donorId } = req.params ?? {};
+  const donor_id = Number(donorId);
+  const { password } = req.body ?? {};
+
+  if (!donor_id || !password) {
+    return res.status(400).json({ error: "donorId, password 필수" });
+  }
+
+  try {
+    const [rows] = await pool.query("SELECT donor_id, password AS stored_password FROM donor WHERE donor_id = ? LIMIT 1", [
+      donor_id,
+    ]);
+    const donor = Array.isArray(rows) ? rows[0] : null;
+
+    if (donor && donor.stored_password === password) {
+      return res.json({ ok: true });
+    }
+  } catch (error) {
+    console.error("비밀번호 확인 실패", error);
+  }
+
+  res.status(401).json({ error: "비밀번호가 올바르지 않습니다." });
 });
 
 const PORT = Number(process.env.PORT || 8080);
+(async () => {
+  try {
+    await ensureSampleFinishedDonation();
+  } catch (error) {
+    console.error("샘플 종료 프로그램 보장 실패", error);
+  }
+})();
+
 app.listen(PORT, () => console.log(`Server on http://localhost:${PORT}`));

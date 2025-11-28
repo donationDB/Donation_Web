@@ -4,6 +4,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const checkButton = document.getElementById("check-duplicate");
   const duplicateResult = document.getElementById("duplicate-result");
   const categorySelect = document.getElementById("program-category");
+  const monthlyCheckbox = document.getElementById("monthly-donation");
+  const monthlyHelper = document.getElementById("monthly-helper");
+  const startDateInput = document.getElementById("start-date");
+  const endDateInput = document.getElementById("end-date");
 
   const session = window.donorSession?.getSession?.();
   if (!session || session.role !== "company") {
@@ -38,6 +42,35 @@ document.addEventListener("DOMContentLoaded", () => {
     duplicateResult.textContent = message;
     duplicateResult.classList.remove("ok", "error");
     if (status) duplicateResult.classList.add(status);
+  }
+
+  function isMonthlyAllowed() {
+    const startValue = startDateInput?.value;
+    const endValue = endDateInput?.value;
+    if (!startValue || !endValue) return false;
+
+    const start = new Date(startValue);
+    const end = new Date(endValue);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return false;
+
+    const threshold = new Date(start);
+    threshold.setMonth(threshold.getMonth() + 6);
+    return end.getTime() >= threshold.getTime();
+  }
+
+  function updateMonthlyAvailability() {
+    const allowed = isMonthlyAllowed();
+    if (!monthlyCheckbox) return;
+
+    if (allowed) {
+      monthlyCheckbox.disabled = false;
+      if (monthlyHelper) monthlyHelper.textContent = "6개월 이상 진행되는 프로그램은 정기 기부를 받을 수 있습니다.";
+    } else {
+      monthlyCheckbox.checked = false;
+      monthlyCheckbox.disabled = true;
+      if (monthlyHelper)
+        monthlyHelper.textContent = "정기 기부는 최소 6개월 이상 진행되는 프로그램만 설정할 수 있습니다.";
+    }
   }
 
   async function checkDuplicate() {
@@ -79,7 +112,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   checkButton?.addEventListener("click", checkDuplicate);
 
+  startDateInput?.addEventListener("change", updateMonthlyAvailability);
+  endDateInput?.addEventListener("change", updateMonthlyAvailability);
+
   fetchCategories();
+  updateMonthlyAvailability();
 
   form?.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -92,6 +129,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const accountNumber = form.accountNumber?.value?.trim();
     const goalAmount = form.goalAmount?.value;
     const description = form.programDescription?.value?.trim();
+    const monthlyAllowed = isMonthlyAllowed();
+    const monthlyDonation = monthlyAllowed && Boolean(monthlyCheckbox?.checked);
 
     if (!title || !categoryId || !startDate || !endDate || !description) {
       alert("필수 정보를 모두 입력해주세요.");
@@ -122,6 +161,7 @@ document.addEventListener("DOMContentLoaded", () => {
       description,
       status: "PENDING",
       host_company_id: session.company_id,
+      monthly: monthlyDonation,
     };
 
     try {

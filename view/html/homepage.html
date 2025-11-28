@@ -16,6 +16,7 @@
         </a>
         <nav class="nav">
           <ul>
+            <li><a href="monthly_donation.html">매달기부</a></li>
             <li><a href="#about">소개</a></li>
             <li><a href="#causes">기부 분야</a></li>
             <li><a href="#impact">임팩트</a></li>
@@ -129,14 +130,35 @@
             <p>“기부 이후 피드백이 상세해서 다음 기부도 기대돼요.”</p>
             <cite>– 박민지, 대학생 봉사자</cite>
           </blockquote>
-        </div>
-      </section>
+      </div>
+    </section>
 
-      <section class="cta" id="cta">
-        <div class="container cta-inner">
-          <div class="cta-copy">
-            <h2>함께하면 더 큰 변화를 만들 수 있습니다</h2>
-            <p>관심 있는 프로젝트를 선택하고 지금 바로 기부를 시작하세요.</p>
+    <section class="recommend-section" id="recommendations">
+      <div class="container">
+        <div class="recommend-section__header">
+          <div>
+            <p class="eyebrow">맞춤 추천</p>
+            <h2>내 취향에 맞는 기부 프로그램</h2>
+            <p class="survey-subtitle">설문 결과를 기반으로 추천한 프로그램입니다.</p>
+          </div>
+          <div class="recommend-section__actions">
+            <button class="btn btn-secondary" type="button" data-action="refresh-recommend">
+              추천 새로고침
+            </button>
+          </div>
+        </div>
+        <div class="recommend-inline" data-role="recommend-inline-list"></div>
+        <p class="donation-error" data-role="recommend-inline-empty" hidden>
+          아직 추천 결과가 없습니다. 설문을 완료하거나 새로고침해 주세요.
+        </p>
+      </div>
+    </section>
+
+    <section class="cta" id="cta">
+      <div class="container cta-inner">
+        <div class="cta-copy">
+          <h2>함께하면 더 큰 변화를 만들 수 있습니다</h2>
+          <p>관심 있는 프로젝트를 선택하고 지금 바로 기부를 시작하세요.</p>
           </div>
           <a
             class="btn btn-primary btn-large"
@@ -182,7 +204,275 @@
       </div>
     </footer>
 
-    <script src="../javascript/session.js"></script>
-    <script src="../javascript/homepage.js"></script>
-  </body>
+    <section
+      class="survey-modal"
+      data-role="onboarding-survey"
+      aria-hidden="true"
+    >
+      <div class="survey-modal__backdrop" data-action="close-survey"></div>
+      <div
+        class="survey-modal__dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="survey-title"
+      >
+        <header class="survey-modal__header">
+          <div class="survey-header__copy">
+            <p class="eyebrow">맞춤 추천 준비</p>
+            <h3 id="survey-title">기부 성향 설문</h3>
+            <p class="survey-subtitle">
+              관심 분야와 지역을 알려주시면 홈에서 더 잘 맞는 캠페인을 추천해요.
+            </p>
+          </div>
+          <button
+            class="survey-close"
+            data-action="close-survey"
+            aria-label="닫기"
+          >
+            &times;
+          </button>
+        </header>
+
+        <div class="survey-modal__body">
+          <aside class="survey-intro">
+            <p class="pill pill--soft">Preferences</p>
+            <h4>보고 싶은 캠페인을 골라 보여드려요.</h4>
+            <p>
+              카테고리, 지역, 정기 여부, 긴급 캠페인 선호, 키워드를 입력하면 이후 추천과 검색에 반영됩니다.
+            </p>
+            <ul class="survey-points">
+              <li>관심 분야/지역을 중심으로 캠페인을 먼저 보여줘요.</li>
+              <li>정기/단발 선호와 긴급 캠페인 우선 여부를 고려해 추천해요.</li>
+              <li>키워드를 남기면 비슷한 프로그램을 더 정확히 찾아드려요.</li>
+            </ul>
+          </aside>
+
+          <form class="survey-form" id="onboarding-survey-form">
+            <div class="survey-question">
+              <div class="survey-question__head">
+                <span class="pill">Q1</span>
+                <div>
+                  <p class="eyebrow">복수선택 가능</p>
+                  <h5>어떤 관심 분야에 후원하고 싶나요?</h5>
+                </div>
+              </div>
+              <div class="survey-options survey-options--chips">
+                <label class="chip-input">
+                  <input type="checkbox" name="preferredCategory" value="education" />
+                  <span>아동·청소년 교육</span>
+                </label>
+                <label class="chip-input">
+                  <input type="checkbox" name="preferredCategory" value="environment" />
+                  <span>환경 보호</span>
+                </label>
+                <label class="chip-input">
+                  <input type="checkbox" name="preferredCategory" value="animal" />
+                  <span>동물 보호</span>
+                </label>
+                <label class="chip-input">
+                  <input type="checkbox" name="preferredCategory" value="senior" />
+                  <span>노인 복지</span>
+                </label>
+                <label class="chip-input">
+                  <input type="checkbox" name="preferredCategory" value="disability" />
+                  <span>장애인 지원</span>
+                </label>
+                <label class="chip-input">
+                  <input type="checkbox" name="preferredCategory" value="disaster" />
+                  <span>재난 구호</span>
+                </label>
+                <label class="chip-input">
+                  <input type="checkbox" name="preferredCategory" value="community" />
+                  <span>지역 사회</span>
+                </label>
+                <label class="chip-input">
+                  <input type="checkbox" name="preferredCategory" value="medical" />
+                  <span>의료 지원</span>
+                </label>
+                <label class="chip-input">
+                  <input type="checkbox" name="preferredCategory" value="rights" />
+                  <span>인권 보호</span>
+                </label>
+                <label class="chip-input">
+                  <input type="checkbox" name="preferredCategory" value="culture" />
+                  <span>문화 예술</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="survey-question">
+              <div class="survey-question__head">
+                <span class="pill">Q2</span>
+                <div>
+                  <p class="eyebrow">단일 선택</p>
+                  <h5>정기 여부를 알려주세요.</h5>
+                </div>
+              </div>
+              <div class="survey-options survey-options--inline">
+                <label class="radio-tile">
+                  <input type="radio" name="subscriptionType" value="ONE_TIME" />
+                  <span>단발</span>
+                </label>
+                <label class="radio-tile">
+                  <input type="radio" name="subscriptionType" value="RECURRING" />
+                  <span>정기</span>
+                </label>
+                <label class="radio-tile">
+                  <input type="radio" name="subscriptionType" value="ANY" />
+                  <span>상관없음</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="survey-question">
+              <div class="survey-question__head">
+                <span class="pill">Q3</span>
+                <div>
+                  <p class="eyebrow">복수선택 가능</p>
+                  <h5>선호하는 지역은 어디인가요?</h5>
+                </div>
+              </div>
+              <div class="survey-options survey-options--chips">
+                <label class="chip-input">
+                  <input type="checkbox" name="preferredRegion" value="서울" />
+                  <span>서울</span>
+                </label>
+                <label class="chip-input">
+                  <input type="checkbox" name="preferredRegion" value="부산" />
+                  <span>부산</span>
+                </label>
+                <label class="chip-input">
+                  <input type="checkbox" name="preferredRegion" value="대구" />
+                  <span>대구</span>
+                </label>
+                <label class="chip-input">
+                  <input type="checkbox" name="preferredRegion" value="인천" />
+                  <span>인천</span>
+                </label>
+                <label class="chip-input">
+                  <input type="checkbox" name="preferredRegion" value="광주" />
+                  <span>광주</span>
+                </label>
+                <label class="chip-input">
+                  <input type="checkbox" name="preferredRegion" value="대전" />
+                  <span>대전</span>
+                </label>
+                <label class="chip-input">
+                  <input type="checkbox" name="preferredRegion" value="울산" />
+                  <span>울산</span>
+                </label>
+                <label class="chip-input">
+                  <input type="checkbox" name="preferredRegion" value="세종" />
+                  <span>세종</span>
+                </label>
+                <label class="chip-input">
+                  <input type="checkbox" name="preferredRegion" value="경기" />
+                  <span>경기</span>
+                </label>
+                <label class="chip-input">
+                  <input type="checkbox" name="preferredRegion" value="강원" />
+                  <span>강원</span>
+                </label>
+                <label class="chip-input">
+                  <input type="checkbox" name="preferredRegion" value="충청" />
+                  <span>충청</span>
+                </label>
+                <label class="chip-input">
+                  <input type="checkbox" name="preferredRegion" value="전라" />
+                  <span>전라</span>
+                </label>
+                <label class="chip-input">
+                  <input type="checkbox" name="preferredRegion" value="경상" />
+                  <span>경상</span>
+                </label>
+                <label class="chip-input">
+                  <input type="checkbox" name="preferredRegion" value="제주" />
+                  <span>제주</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="survey-question">
+              <div class="survey-question__head">
+                <span class="pill">Q4</span>
+                <div>
+                  <p class="eyebrow">단일 선택</p>
+                  <h5>긴급 캠페인을 우선적으로 볼까요?</h5>
+                </div>
+              </div>
+              <div class="survey-options survey-options--inline">
+                <label class="radio-tile">
+                  <input type="radio" name="emergencyPreference" value="1" />
+                  <span>예, 긴급 캠페인 우선</span>
+                </label>
+                <label class="radio-tile">
+                  <input type="radio" name="emergencyPreference" value="0" />
+                  <span>아니오</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="survey-question">
+              <div class="survey-question__head">
+                <span class="pill">Q5</span>
+                <div>
+                  <p class="eyebrow">자유 입력</p>
+                  <h5>지금 특히 돕고 싶은 키워드</h5>
+                </div>
+              </div>
+              <textarea
+                class="survey-textarea"
+                name="currentFocusKeyword"
+                placeholder="예: 부산 어르신 난방비, 겨울 유기동물 사료"
+                rows="3"
+              ></textarea>
+            </div>
+          </form>
+        </div>
+
+        <footer class="survey-modal__footer">
+          <div class="survey-footer__note">
+            저장하면 홈 추천에 반영돼요. 나중에 마이페이지에서 다시 수정할 수 있습니다.
+          </div>
+      <div class="survey-actions">
+        <button class="btn btn-secondary btn-ghost" data-action="skip-survey">
+          다음에 할게요
+        </button>
+        <button class="btn btn-primary" type="submit" form="onboarding-survey-form">
+          설문 저장하기
+        </button>
+      </div>
+    </footer>
+  </div>
+</section>
+
+<section
+  class="recommend-modal"
+  data-role="recommend-modal"
+  aria-hidden="true"
+>
+  <div class="survey-modal__backdrop" data-action="close-recommend"></div>
+  <div class="survey-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="recommend-title">
+    <header class="survey-modal__header">
+      <div class="survey-header__copy">
+        <p class="eyebrow">추천 결과</p>
+        <h3 id="recommend-title">맞춤 추천 프로그램</h3>
+        <p class="survey-subtitle">설문 기반으로 선별된 프로그램입니다.</p>
+      </div>
+      <button class="survey-close" data-action="close-recommend" aria-label="닫기">&times;</button>
+    </header>
+    <div class="survey-modal__body recommend-body">
+      <div class="recommend-loading" data-role="recommend-loading" hidden>
+        <div class="spinner" aria-hidden="true"></div>
+        <p>추천 결과를 준비하고 있습니다...</p>
+      </div>
+      <div class="recommend-list" data-role="recommend-list"></div>
+      <p class="donation-error" data-role="recommend-empty" hidden>추천 결과가 없습니다. 설문을 다시 시도해 주세요.</p>
+    </div>
+  </div>
+</section>
+
+<script src="../javascript/session.js"></script>
+<script src="../javascript/homepage.js"></script>
+</body>
 </html>

@@ -1,5 +1,16 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const API_BASE = "http://localhost:8080/api";
+  // API 엔드포인트: window.API_BASE 우선, 없으면 백엔드 기본 포트(8080)로 폴백
+  const API_BASE = (() => {
+    const custom = window.API_BASE && window.API_BASE.replace(/\/$/, "");
+    if (custom) return custom;
+    const origin = window.location.origin.replace(/\/$/, "");
+    // 개발용 정적 서버(예: 5500)일 때는 백엔드 8080으로 폴백
+    if (!origin.includes(":8080")) {
+      return "http://127.0.0.1:8080/api";
+    }
+    return `${origin}/api`;
+  })();
+  const monthlyOnly = document.body?.dataset?.monthlyOnly === "true";
 
   const loaderEl = document.querySelector("[data-role='loader']");
   const errorEl = document.querySelector("[data-role='error']");
@@ -12,6 +23,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const cancelButton = panelEl?.querySelector("[data-action='cancel-donation']");
   const panelTitleEl = panelEl?.querySelector("[data-field='panel-title']");
   const panelDescriptionEl = panelEl?.querySelector("[data-field='panel-description']");
+  const cycleSelect = panelEl?.querySelector("select[name='cycle']");
+  const startDateInput = panelEl?.querySelector("input[name='startDate']");
   const donorNameEl = document.querySelector("[data-field='donor-name']");
   const logoutButton = document.querySelector("[data-action='logout']");
   const categoryListEl = document.querySelector("[data-role='donation-categories']");
@@ -49,6 +62,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   setDonorName();
+
+  if (monthlyOnly && startDateInput) {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = `${today.getMonth() + 1}`.padStart(2, "0");
+    const dd = `${today.getDate()}`.padStart(2, "0");
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+    startDateInput.min = todayStr;
+    startDateInput.value = todayStr;
+  }
 
   logoutButton?.addEventListener("click", () => {
     window.donorSession?.clearSession?.();
@@ -94,6 +117,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function normalizeText(value = "") {
     return String(value ?? "").toLowerCase().trim();
+  }
+
+  function isMonthly(program = {}) {
+    const value =
+      program.monthly ??
+      program.monthly_flag ??
+      (program.funding_type &&
+        ["subscription", "both"].includes(program.funding_type.toString().toLowerCase())) ??
+      program.is_recurring ??
+      program.allow_monthly_donation ??
+      program.recurring ??
+      (program.duration_months >= 6 ? true : null);
+    if (value === true || value === 1) return true;
+    if (typeof value === "string") {
+      const normalized = value.toLowerCase();
+      return ["1", "true", "yes", "y", "on"].includes(normalized);
+    }
+    return false;
   }
 
   function programMatchesCategory(program, categoryKey) {
@@ -284,13 +325,41 @@ document.addEventListener("DOMContentLoaded", () => {
     emptyEl?.setAttribute("hidden", "true");
 
     try {
-      const response = await fetch(`${API_BASE}/donor/programs`);
-      if (!response.ok) {
-        throw new Error("프로그램을 불러오지 못했습니다.");
+      if (monthlyOnly) {
+        // 1차: monthly=1 필터만 적용
+        let data = [];
+        let response = await fetch(`${API_BASE}/programs?monthly=1`);
+        if (response.ok) {
+          data = await response.json();
+        }
+        let list = Array.isArray(data) ? data : [];
+
+        // 2차: 비어있으면 planned/running 전체 가져와서 월간 필터
+        if (!list.length) {
+          response = await fetch(`${API_BASE}/programs?status=planned,running`);
+          if (response.ok) {
+            data = await response.json();
+            list = Array.isArray(data) ? data : [];
+          }
+        }
+
+        // 3차: 여전히 비어있으면 전체 프로그램에서 월간만 필터
+        if (!list.length) {
+          response = await fetch(`${API_BASE}/programs`);
+          if (response.ok) {
+            data = await response.json();
+            list = Array.isArray(data) ? data : [];
+          }
+        }
+
+        allPrograms = list.filter((program) => isMonthly(program));
+      } else {
+        const response = await fetch(`${API_BASE}/donor/programs`);
+        if (!response.ok) throw new Error("프로그램을 불러오지 못했습니다.");
+        const data = await response.json();
+        allPrograms = Array.isArray(data) ? data : [];
       }
 
-      const programs = await response.json();
-      allPrograms = Array.isArray(programs) ? programs : [];
       if (activeCategoryKey || normalizeText(searchQuery)) {
         applyFilters();
       } else {
@@ -330,9 +399,12 @@ document.addEventListener("DOMContentLoaded", () => {
       panelTitleEl.textContent = `${selectedProgram.title}에 기부하기`;
     }
     if (panelDescriptionEl) {
-      panelDescriptionEl.textContent = `종료일 ${selectedProgram.end_date} · ${
-        selectedProgram.organization || "주최 기관 미정"
-      }`;
+      const org = selectedProgram.organization || "주최 기관 미정";
+      if (monthlyOnly) {
+        panelDescriptionEl.textContent = `정기 결제 · ${org}`;
+      } else {
+        panelDescriptionEl.textContent = `종료일 ${selectedProgram.end_date} · ${org}`;
+      }
     }
 
     const hiddenInput = formEl.querySelector("input[name='programId']");
@@ -410,33 +482,63 @@ document.addEventListener("DOMContentLoaded", () => {
       donor_id: session.donor_id,
       program_id: selectedProgram.program_id,
       amount: amountValue,
-      message: formEl.message.value?.trim() || null,
+      message: formEl.message?.value?.trim() || null,
     };
 
     const originalText = submitButton?.textContent;
     submitButton.disabled = true;
     if (submitButton) {
-      submitButton.textContent = "기부 처리 중...";
+      submitButton.textContent = monthlyOnly ? "정기기부 신청 중..." : "기부 처리 중...";
     }
 
     try {
-      const response = await fetch(`${API_BASE}/donations`, {
+      let endpoint = `${API_BASE}/donations`;
+      let body = payload;
+
+      if (monthlyOnly) {
+        const cycle = (cycleSelect?.value || "MONTHLY").toUpperCase();
+        const startDate = startDateInput?.value;
+
+        if (!startDate) {
+          alert("첫 결제 시작일을 선택해주세요.");
+          return;
+        }
+
+        body = {
+          donor_id: payload.donor_id,
+          program_id: payload.program_id,
+          amount: payload.amount,
+          cycle,
+          start_date: startDate,
+          status: "ACTIVE",
+        };
+        endpoint = `${API_BASE}/subscriptions`;
+      }
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || "기부 처리 중 오류가 발생했습니다.");
+        throw new Error(data.error || (monthlyOnly ? "정기기부 처리 중 오류가 발생했습니다." : "기부 처리 중 오류가 발생했습니다."));
       }
 
-      alert("기부가 완료되었습니다. 참여해주셔서 감사합니다!");
+      alert(
+        monthlyOnly
+          ? "정기기부 신청이 완료되었습니다. 첫 결제일에 맞춰 자동결제가 진행됩니다."
+          : "기부가 완료되었습니다. 참여해주셔서 감사합니다!"
+      );
       closePanel();
       await loadPrograms();
     } catch (error) {
       console.error(error);
-      alert(error.message || "기부 처리 중 오류가 발생했습니다.");
+      alert(
+        error.message ||
+          (monthlyOnly ? "정기기부 처리 중 오류가 발생했습니다." : "기부 처리 중 오류가 발생했습니다.")
+      );
     } finally {
       submitButton.disabled = false;
       if (submitButton && originalText) {

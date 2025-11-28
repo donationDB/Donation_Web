@@ -2,6 +2,121 @@
   max-width: 720px;
 }
 
+.page-program-apply .status-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.page-program-apply .status-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  border: 1px solid #eef0f5;
+}
+
+.status-card__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.status-card__actions {
+  display: flex;
+  gap: 10px;
+}
+
+.eyebrow {
+  font-size: 0.9rem;
+  color: #5b6b7a;
+  margin-bottom: 6px;
+}
+
+.muted {
+  color: #5b6b7a;
+  margin-top: 6px;
+}
+
+.status-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.status-row {
+  border: 1px solid #eef0f5;
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: #fafbfe;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr 0.9fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.status-row__group-title {
+  font-weight: 700;
+  color: #1b2a3a;
+  margin-top: 10px;
+}
+
+.status-row__title {
+  font-weight: 600;
+  color: #1b2a3a;
+}
+
+.status-row__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #526071;
+}
+
+.badge {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.badge--pending {
+  background: #fff3e6;
+  color: #c16a00;
+}
+
+.badge--planned {
+  background: #e8f4ff;
+  color: #1a6ad7;
+}
+
+.badge--running {
+  background: #e8fff5;
+  color: #158f5d;
+}
+
+.badge--finished {
+  background: #f1f2f6;
+  color: #5b6b7a;
+}
+
+.badge--rejected {
+  background: #ffe9ec;
+  color: #c5223f;
+}
+
+.status-row--loading,
+.status-row--empty {
+  text-align: center;
+  justify-content: center;
+  grid-template-columns: 1fr;
+  color: #5b6b7a;
+}
+
 .page-program-apply .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -32,9 +147,38 @@
   color: #d02f2f;
 }
 
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checkbox-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #1b2a3a;
+}
+
 @media (max-width: 640px) {
   .page-program-apply .auth-card {
     padding: 24px 20px;
+  }
+
+  .status-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .status-card__actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .status-row {
+    grid-template-columns: 1fr;
   }
 
   .inline-group .inline-control {

@@ -30,30 +30,24 @@
       </section>
 
       <section class="auth-section">
-        <div class="container login-layout">
-          <article class="auth-card login-card" aria-labelledby="program-apply-status-title">
-            <h2 id="program-apply-status-title">신청 목록</h2>
-            <div class="table-wrapper">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>프로그램명</th>
-                    <th>상태</th>
-                    <th>시작</th>
-                    <th>마감</th>
-                    <th>목표금액</th>
-                  </tr>
-                </thead>
-                <tbody data-role="program-status-body">
-                  <tr>
-                    <td colspan="6">데이터를 불러오는 중입니다...</td>
-                  </tr>
-                </tbody>
-              </table>
+        <div class="container status-layout">
+          <article class="status-card" aria-labelledby="program-apply-status-title">
+            <div class="status-card__header">
+              <div>
+                <p class="eyebrow">파트너 신청 현황</p>
+                <h2 id="program-apply-status-title">내 프로그램 신청 목록</h2>
+                <p class="muted">
+                  신청 상태와 기간, 목표 금액을 한눈에 확인하세요. 상태가 갱신되면 자동으로 업데이트됩니다.
+                </p>
+              </div>
+              <div class="status-card__actions">
+                <a class="btn btn-secondary" href="program_apply.html">새 프로그램 신청</a>
+                <button type="button" class="btn btn-outline" data-action="refresh-status">새로고침</button>
+              </div>
             </div>
-            <div class="cta-actions">
-              <a class="btn btn-secondary" href="program_apply.html">새 프로그램 신청</a>
+
+            <div class="status-list" data-role="program-status-body">
+              <div class="status-row status-row--loading">데이터를 불러오는 중입니다...</div>
             </div>
           </article>
         </div>

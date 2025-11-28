@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>희망나눔 – 매달 기부하기</title>
+    <link rel="stylesheet" href="../../core/components/components.css" />
+    <link rel="stylesheet" href="../css/donation.css" />
+  </head>
+  <body class="page-donation" data-monthly-only="true">
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="logo" href="homepage.html" aria-label="희망나눔 로고">
+          <span class="logo-icon" aria-hidden="true">❤</span>
+          <span class="logo-text">희망나눔</span>
+        </a>
+        <div class="donation-account" data-role="donation-account">
+          <span class="donation-account__greeting">
+            <strong data-field="donor-name">기부자님</strong> 환영합니다.
+          </span>
+          <button type="button" class="btn btn-secondary" data-action="logout">
+            로그아웃
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="donation-main">
+      <section class="donation-intro">
+        <div class="container">
+          <h1>매달 기부하기</h1>
+          <p>정기(매달) 기부가 열려 있는 프로그램만 모아 보여드려요.</p>
+        </div>
+      </section>
+
+      <section class="donation-tools" aria-label="카테고리 및 프로그램 검색">
+        <div class="container donation-tools__inner">
+          <div class="donation-category-panel">
+            <div class="donation-category-panel__header">
+              <h2>관심 분야 바로가기</h2>
+              <p>보고 싶은 카테고리를 선택하면 아래 리스트가 이동합니다.</p>
+            </div>
+            <div
+              class="donation-category-panel__list"
+              data-role="donation-categories"
+            ></div>
+            <p
+              class="donation-category-panel__empty"
+              data-role="donation-category-empty"
+              hidden
+            >
+              아직 사용할 수 있는 카테고리가 없습니다. 잠시 후 다시 시도해 주세요.
+            </p>
+          </div>
+          <div class="donation-search-panel">
+            <label for="program-search">프로그램 검색</label>
+            <div class="donation-search-panel__field">
+              <input
+                type="search"
+                id="program-search"
+                name="programSearch"
+                placeholder="프로그램 제목, 주최 기관, 카테고리를 검색하세요"
+                autocomplete="off"
+                data-role="program-search"
+              />
+              <button
+                type="button"
+                class="donation-search-panel__clear"
+                data-action="clear-search"
+              >
+                초기화
+              </button>
+            </div>
+            <p class="donation-search-panel__hint">
+              매달 기부 가능한 프로그램만 표시됩니다.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="donation-programs" aria-live="polite">
+        <div class="container">
+          <div class="donation-status">
+            <div class="donation-loader" data-role="loader">프로그램을 불러오는 중입니다...</div>
+            <p class="donation-error" data-role="error" hidden>
+              프로그램 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.
+            </p>
+          </div>
+
+          <div class="program-grid" data-role="program-list"></div>
+
+          <p class="donation-filter-empty" data-role="filter-empty" hidden>
+            선택한 카테고리나 검색어에 해당하는 프로그램이 없습니다.
+          </p>
+          <section class="donation-empty" data-role="empty" hidden>
+            <p>현재 진행 중인 매달 기부 프로그램이 없습니다.</p>
+          </section>
+        </div>
+      </section>
+
+      <section class="donation-panel" data-role="donation-panel" hidden>
+        <div class="container donation-panel__inner">
+          <header class="donation-panel__header">
+            <h2 data-field="panel-title">기부 정보 입력</h2>
+            <p data-field="panel-description">
+              기부할 금액과 응원 메시지를 입력해주세요.
+            </p>
+          </header>
+          <form data-role="donation-form">
+            <input type="hidden" name="programId" />
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="donation-cycle">결제 주기</label>
+                <select id="donation-cycle" name="cycle">
+                  <option value="MONTHLY">매달</option>
+                  <option value="YEARLY">매년</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="start-date">첫 결제 시작일</label>
+                <input type="date" id="start-date" name="startDate" required />
+                <p class="form-hint">오늘 이후 날짜로 설정됩니다.</p>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="donation-amount">기부 금액 (원)</label>
+              <input
+                type="number"
+                id="donation-amount"
+                name="amount"
+                min="1000"
+                step="1000"
+                placeholder="예: 10000"
+                required
+              />
+              <p class="form-hint">최소 1,000원부터 1,000원 단위로 기부할 수 있습니다.</p>
+            </div>
+            <div class="form-group">
+              <label for="donation-message">응원 메시지 (선택)</label>
+              <textarea
+                id="donation-message"
+                name="message"
+                rows="3"
+                maxlength="200"
+                placeholder="응원 메시지를 남겨주세요 (최대 200자)"
+              ></textarea>
+            </div>
+            <div class="donation-panel__actions">
+              <button type="submit" class="btn btn-primary" data-role="submit-button">
+                기부하기
+              </button>
+              <button type="button" class="btn btn-secondary" data-action="cancel-donation">
+                취소
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer donation-footer">
+      <div class="container footer-bottom">
+        <small>&copy; 2024 희망나눔. 모든 권리 보유.</small>
+      </div>
+    </footer>
+
+    <script src="../javascript/session.js"></script>
+    <script src="../javascript/donation.js"></script>
+  </body>
+</html>
