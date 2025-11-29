@@ -320,6 +320,12 @@ h3 {
     color: transparent;
 }
 
+.form-group input.input-error,
+.form-group select.input-error {
+    border-color: #e63946;
+    box-shadow: 0 2px 0 #e63946 inset;
+}
+
 .full-width {
     width: 100%;
 }

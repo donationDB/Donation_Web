@@ -81,8 +81,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateButtons(status) {
-    const canApprove = status === "planned" || status === "pending";
-    const canReject = status === "planned" || status === "pending";
+    // 계획(planned) 상태는 승인 버튼 비활성화, 반려만 가능하도록 분기
+    const canApprove = status === "pending";
+    const canReject = status === "pending" || status === "planned";
     approveButton.disabled = !canApprove;
     rejectButton.disabled = !canReject;
   }

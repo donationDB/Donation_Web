@@ -18,11 +18,22 @@ function formatDateTime(value) {
   return `${date.toLocaleDateString("ko-KR")} ${date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}`;
 }
 
+function formatCycle(value = "") {
+  const normalized = value.toString().toUpperCase();
+  if (normalized === "YEARLY" || normalized === "ANNUAL") return "연간 정기후원";
+  if (normalized === "MONTHLY") return "월간 정기후원";
+  return "정기후원";
+}
+
 function renderSummary(summary = {}) {
   const totalEl = document.querySelector("[data-role='total-amount']");
   const countEl = document.querySelector("[data-role='total-count']");
+  const subTotalEl = document.querySelector("[data-role='subscription-total']");
+  const subCountEl = document.querySelector("[data-role='subscription-count']");
   if (totalEl) totalEl.textContent = formatCurrency(summary.total_amount || 0);
   if (countEl) countEl.textContent = `${summary.donation_count || 0}회`;
+  if (subTotalEl) subTotalEl.textContent = formatCurrency(summary.subscription_total_amount || 0);
+  if (subCountEl) subCountEl.textContent = `${summary.subscription_count || 0}건`;
 }
 
 function renderDonations(list = []) {
@@ -80,6 +91,70 @@ function renderDonations(list = []) {
       const firstColumn = row.querySelector("div");
       firstColumn?.appendChild(hint);
     }
+
+    fragment.appendChild(row);
+  });
+
+  container.replaceChildren(fragment);
+}
+
+function renderSubscriptions(list = []) {
+  const container = document.querySelector("[data-role='subscription-list']");
+  if (!container) return;
+
+  if (!Array.isArray(list) || !list.length) {
+    container.innerHTML = '<p class="empty">정기후원 내역이 없습니다.</p>';
+    return;
+  }
+
+  const statusClassMap = {
+    ACTIVE: "status-pill--active",
+    RUNNING: "status-pill--active",
+    PAUSED: "status-pill--paused",
+    SUSPENDED: "status-pill--paused",
+    CANCELLED: "status-pill--cancelled",
+    CANCELED: "status-pill--cancelled",
+  };
+
+  const statusLabelMap = {
+    ACTIVE: "진행중",
+    RUNNING: "진행중",
+    PAUSED: "일시중지",
+    SUSPENDED: "일시중지",
+    CANCELLED: "해지",
+    CANCELED: "해지",
+  };
+
+  const fragment = document.createDocumentFragment();
+  list.forEach((item) => {
+    const row = document.createElement("article");
+    row.className = "subscription-row";
+
+    const programTitle = item?.program?.program_name || item?.program?.title || "알 수 없는 프로그램";
+    const programStatus = item?.program?.status_label || item?.program?.status || "-";
+    const cycleText = formatCycle(item.cycle);
+    const startText = formatDate(item.start_date);
+    const normalizedStatus = (item.status || "").toString().toUpperCase();
+    const statusClass = statusClassMap[normalizedStatus] || "";
+    const statusLabel = statusLabelMap[normalizedStatus] || "진행 상태 미확인";
+    const programDuration =
+      `${formatDate(item.program?.start_date)} ~ ${formatDate(item.program?.end_date)}`.replace(/ ~ -$/, "");
+
+    row.innerHTML = `
+      <div>
+        <div class="subscription-title">${programTitle}</div>
+        <div class="subscription-meta">시작일 ${startText}</div>
+        <div class="subscription-meta">${programDuration}</div>
+      </div>
+      <div>
+        <span class="subscription-amount">${formatCurrency(item.amount)}</span>
+        <div class="subscription-meta">${cycleText}</div>
+      </div>
+      <div>
+        <span class="status-pill ${statusClass}">${statusLabel}</span>
+      </div>
+      <div class="subscription-meta">프로그램 상태: ${programStatus}</div>
+    `;
 
     fragment.appendChild(row);
   });
@@ -145,6 +220,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const receiptSummary = document.querySelector("[data-role='receipt-summary']");
   const receiptExpenses = document.querySelector("[data-role='receipt-expenses']");
   const donationList = document.querySelector("[data-role='donation-list']");
+  const subscriptionList = document.querySelector("[data-role='subscription-list']");
   const surveyModal = document.querySelector("[data-role='mypage-survey']");
   const surveyForm = document.getElementById("mypage-survey-form");
   const recommendList = document.querySelector("[data-role='mypage-recommend-list']");
@@ -271,9 +347,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     renderSummary(data.summary || {});
     renderDonations(data.donations || []);
+    renderSubscriptions(data.subscriptions || []);
   } catch (error) {
     console.error(error);
     renderDonations([]);
+    renderSubscriptions([]);
     renderSummary({ total_amount: 0, donation_count: 0 });
   }
 

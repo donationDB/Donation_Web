@@ -1670,14 +1670,40 @@ app.get("/api/donors/:donorId/summary", async (req, res) => {
       [donor_id]
     );
 
+    const [subscriptionRows] = await pool.query(
+      `
+        SELECT
+          s.subscription_id,
+          s.amount,
+          s.cycle,
+          s.start_date,
+          s.status AS subscription_status,
+          p.program_id,
+          p.title AS program_title,
+          p.status AS program_status,
+          p.category_id,
+          p.start_date AS program_start_date,
+          p.end_date AS program_end_date
+        FROM Subscription s
+        LEFT JOIN Program p ON p.program_id = s.program_id
+        WHERE s.donor_id = ?
+        ORDER BY s.start_date DESC, s.subscription_id DESC
+      `,
+      [donor_id]
+    );
+
     if (donor) {
       const donations = Array.isArray(rows) ? rows : [];
+      const subscriptions = Array.isArray(subscriptionRows) ? subscriptionRows : [];
       const total_amount = donations.reduce((sum, item) => sum + Number(item.amount ?? 0), 0);
+      const subscription_total_amount = subscriptions.reduce((sum, item) => sum + Number(item.amount ?? 0), 0);
       return res.json({
         donor,
         summary: {
           total_amount,
           donation_count: donations.length,
+          subscription_total_amount,
+          subscription_count: subscriptions.length,
         },
         donations: donations.map((item) => ({
           donation_id: item.donation_id,
@@ -1691,6 +1717,21 @@ app.get("/api/donors/:donorId/summary", async (req, res) => {
             category_id: item.category_id,
             start_date: item.start_date,
             end_date: item.end_date,
+          }),
+        })),
+        subscriptions: subscriptions.map((item) => ({
+          subscription_id: item.subscription_id,
+          amount: Number(item.amount ?? 0),
+          cycle: item.cycle,
+          start_date: item.start_date,
+          status: item.subscription_status,
+          program: normalizeProgram({
+            program_id: item.program_id,
+            title: item.program_title,
+            status: item.program_status,
+            category_id: item.category_id,
+            start_date: item.program_start_date,
+            end_date: item.program_end_date,
           }),
         })),
       });

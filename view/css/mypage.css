@@ -215,6 +215,72 @@
     margin: 0;
 }
 
+.subscription-panel .summary-chips {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.subscription-list {
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 14px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.subscription-row {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr 0.8fr 0.8fr;
+    padding: 1rem;
+    gap: 0.6rem;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+}
+
+.subscription-row:last-child {
+    border-bottom: 0;
+}
+
+.subscription-title {
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.subscription-meta {
+    color: var(--color-text-light);
+    font-size: 0.95rem;
+}
+
+.subscription-amount {
+    font-weight: 800;
+    color: var(--color-primary);
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    font-weight: 700;
+    background: rgba(31, 41, 55, 0.05);
+    color: var(--color-text);
+}
+
+.status-pill--active {
+    background: rgba(52, 211, 153, 0.16);
+    color: #0f5132;
+}
+
+.status-pill--paused {
+    background: rgba(251, 191, 36, 0.16);
+    color: #92400e;
+}
+
+.status-pill--cancelled {
+    background: rgba(239, 68, 68, 0.16);
+    color: #7f1d1d;
+}
+
 .receipt-modal {
     position: fixed;
     inset: 0;
